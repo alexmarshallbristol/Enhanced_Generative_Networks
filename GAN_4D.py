@@ -63,27 +63,27 @@ def split_tensor(index, x):
 print(tf.__version__)
 
 
-working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
-training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
-transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
-pre_trained_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/PRE_TRAIN/'
-training_name = 'data*.npy'
-testing_name = 'test*.npy'
-saving_directory = 'GAN_4D'
-save_interval = 1000
-weight_of_reco_kicks_in_at = 100
-weight_of_reco_maxes_at = 110 # if weight_of_reco_maxes_at > 0:
-
-# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
-# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-# pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
+# working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
+# training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
+# transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
+# pre_trained_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/PRE_TRAIN/'
 # training_name = 'data*.npy'
 # testing_name = 'test*.npy'
 # saving_directory = 'GAN_4D'
-# save_interval = 25000
-# weight_of_reco_kicks_in_at = 25000
-# weight_of_reco_maxes_at = 100000 # if weight_of_reco_maxes_at > 0:
+# save_interval = 1000
+# weight_of_reco_kicks_in_at = 100
+# weight_of_reco_maxes_at = 110 # if weight_of_reco_maxes_at > 0:
+
+working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
+training_name = 'data*.npy'
+testing_name = 'test*.npy'
+saving_directory = 'GAN_4D'
+save_interval = 25000
+weight_of_reco_kicks_in_at = 0
+weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
 
 
 calculate_ROC = True

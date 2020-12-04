@@ -88,28 +88,28 @@ if configuration == 0:
 	aux_name = 'r'
 	plot_index_x = 1
 	plot_index_y = 4
-elif configuration == 0:
+elif configuration == 1:
 	D_architecture_aux = [32, 64]
 	index_in_GAN_output_vector = 3
 	index_of_aux_column = 8
 	aux_name = 'z'
 	plot_index_x = 1
 	plot_index_y = 4
-elif configuration == 0:
+elif configuration == 2:
 	D_architecture_aux = [32, 64]
 	index_in_GAN_output_vector = 4
 	index_of_aux_column = 9
 	aux_name = 'pt'
 	plot_index_x = 3
 	plot_index_y = 4
-elif configuration == 0:
+elif configuration == 3:
 	D_architecture_aux = [32, 64]
 	index_in_GAN_output_vector = 6
 	index_of_aux_column = 10
 	aux_name = 'pz'
 	plot_index_x = 1
 	plot_index_y = 4
-elif configuration == 0:
+elif configuration == 4:
 	D_architecture_aux = [64, 128]
 	index_in_GAN_output_vector = 'na'
 	index_of_aux_column = 11

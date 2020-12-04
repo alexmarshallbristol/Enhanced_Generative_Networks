@@ -59,23 +59,23 @@ def _loss_generator(y_true, y_pred):
 
 print(tf.__version__)
 
-working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
-training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
-transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
-training_name = 'data*.npy'
-testing_name = 'test*.npy'
-saving_directory = 'Vanilla'
-save_interval = 500
-
-# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
-# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
+# training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
+# transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
 # training_name = 'data*.npy'
 # testing_name = 'test*.npy'
 # saving_directory = 'Vanilla'
-# save_interval = 25000
+# save_interval = 500
 
-calculate_ROC = False
+working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+training_name = 'data*.npy'
+testing_name = 'test*.npy'
+saving_directory = 'Vanilla'
+save_interval = 25000
+
+calculate_ROC = True
 
 batch_size = 50
 
