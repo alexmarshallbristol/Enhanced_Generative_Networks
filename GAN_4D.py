@@ -3,7 +3,7 @@ import numpy as np
 from tensorflow.keras.layers import Input, Flatten, Dense, Reshape, Dropout, Concatenate, Lambda, ReLU, Activation
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import LeakyReLU
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras import backend as K
 import tensorflow as tf
 _EPSILON = K.epsilon()
@@ -97,7 +97,7 @@ D_architecture_aux = [32, 64]
 weight_of_vanilla_loss = 10.
 weight_of_reco_loss = 1.
 
-AAE_decoder = load_model('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/AAE/DECODER.h5')
+AAE_decoder = load_model('/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/AAE/DECODER.h5')
 
 trans_1 = load(open('%strans_1.pkl'%transformer_directory, 'rb'))
 trans_2 = load(open('%strans_2.pkl'%transformer_directory, 'rb'))
@@ -393,9 +393,9 @@ for epoch in range(int(1E30)):
 				if iteration == 0: noise_size = 10
 					
 				charge_gan = np.random.choice([-1,1],size=(noise_size,1,1),p=[1-0.5,0.5],replace=True)
-				aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,4)))
+				# aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,4)))
 				aux_gan = AAE_decoder.predict(np.abs(np.random.normal(0,1,size=(noise_size,4))))
-				# gen_noise = np.random.normal(0, 1, (int(noise_size), 100))
+				gen_noise = np.random.normal(0, 1, (int(noise_size), 100))
 				images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan])
 
 				images = np.squeeze(images)
@@ -526,7 +526,7 @@ for epoch in range(int(1E30)):
 						discriminator.save('%s%s/Discriminator_best_ROC_AUC.h5'%(working_directory,saving_directory))
 						discriminator.save_weights('%s%s/Discriminator_best_ROC_AUC_weights.h5'%(working_directory,saving_directory))
 						best_ROC_AUC = ROC_AUC_SCORE_list[-1][1]
-						shutil.copy('%s%s/Correlations.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
+						shutil.copy('%s%s/CORRELATIONS.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
 
 					plt.figure(figsize=(8,4))
 					plt.title('ROC_AUC_SCORE_list best: %.4f at %d'%(best_ROC_AUC,ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0]))
