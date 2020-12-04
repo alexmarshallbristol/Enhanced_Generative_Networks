@@ -212,7 +212,7 @@ for layer in D_architecture_aux:
 d_output_aux = Dense(1, activation='relu')(H)
 
 discriminator_aux_pt = Model(d_input, d_output_aux)
-# discriminator_aux_pt.load_weights('/%s/D_AUX_%s_WEIGHTS.h5'%(pre_trained_directory,aux_name))
+discriminator_aux_pt.load_weights('/%s/D_AUX_%s_WEIGHTS.h5'%(pre_trained_directory,aux_name))
 #############################################################################################################
 
 ##############################################################################################################
