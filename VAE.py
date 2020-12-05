@@ -70,21 +70,21 @@ def split_tensor(index, x):
 
 print(tf.__version__)
 
-# working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
-# training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
-# transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
-# training_name = 'data*.npy'
-# testing_name = 'test*.npy'
-# saving_directory = 'VAE'
-# save_interval = 1000
-
-working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
-transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
+training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
+transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
 training_name = 'data*.npy'
 testing_name = 'test*.npy'
 saving_directory = 'VAE'
-save_interval = 25000
+save_interval = 1000
+
+# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# training_name = 'data*.npy'
+# testing_name = 'test*.npy'
+# saving_directory = 'VAE'
+# save_interval = 25000
 
 calculate_ROC = True
 
@@ -227,6 +227,28 @@ def train_step(images):
 
 	return vae_kl_loss, vae_reco_loss
 
+@tf.function
+def train_step_boosted(images):
+
+	pdg, images, aux_values_BIN, un_boost_latent = images[:,:,0], images[:,0,1:7], images[:,:,7:-1], images[:,:,-1]
+
+	with tf.GradientTape() as tape:
+
+		vae_out, vae_z_mean, vae_z_log_var = vae(images)
+
+		vae_reco_loss = reco_loss(images, vae_out)
+		vae_reco_loss = tf.math.reduce_mean(vae_reco_loss)
+		vae_kl_loss = kl_loss(vae_z_mean, vae_z_log_var)*un_boost_latent
+		vae_kl_loss = tf.math.reduce_mean(vae_kl_loss)
+
+		vae_loss = vae_kl_loss*kl_factor + vae_reco_loss*reco_factor
+
+	grad_vae = tape.gradient(vae_loss, vae.trainable_variables)
+
+	optimizer.apply_gradients(zip(grad_vae, vae.trainable_variables))
+
+	return vae_kl_loss, vae_reco_loss
+
 
 start = time.time()
 
@@ -262,6 +284,9 @@ for epoch in range(int(1E30)):
 			list_for_np_choice = np.arange(np.shape(boost_weights)[0])
 			random_indicies_order = np.random.choice(list_for_np_choice, size=np.shape(X_train)[0], p=boost_weights, replace=True) 
 			X_train = X_train[random_indicies_order]
+			weight_back_down = boost_weights**-1
+			weight_back_down = np.squeeze(weight_back_down/np.sum(weight_back_down))*np.shape(X_train)[0]
+			X_train = np.concatenate((X_train, np.expand_dims(weight_back_down,1)),axis=1)
 
 		if iteration == -1:
 			plt.figure(figsize=(5*4, 3*4))
@@ -294,7 +319,10 @@ for epoch in range(int(1E30)):
 
 			iteration += 1
 
-			kl_loss_np, reco_loss_np = train_step(images_for_batch)
+			if sample_boosting == True:
+				kl_loss_np, reco_loss_np = train_step_boosted(images_for_batch)
+			else:
+				kl_loss_np, reco_loss_np = train_step(images_for_batch)
 
 			loss_list = np.append(loss_list, [[iteration, kl_loss_np, reco_loss_np]], axis=0)
 
@@ -332,158 +360,160 @@ for epoch in range(int(1E30)):
 				plt.savefig('%s%s/LOSSES.png'%(working_directory,saving_directory),bbox_inches='tight')
 				plt.close('all')
 
-				noise_size = 100000
-		
-				if iteration == 0: noise_size = 10
+				try:
+					noise_size = 100000
+			
+					if iteration == 0: noise_size = 10
 
-				gen_noise = np.random.normal(0, 1, (int(noise_size), latent_dim))
-				images = np.squeeze(decoder.predict([gen_noise]))
+					gen_noise = np.random.normal(0, 1, (int(noise_size), latent_dim))
+					images = np.squeeze(decoder.predict([gen_noise]))
 
 
-				random_indicies = np.random.choice(list_for_np_choice_test, size=(1,int(noise_size)), replace=False)
-				sample = X_test[random_indicies[0]]
+					random_indicies = np.random.choice(list_for_np_choice_test, size=(1,int(noise_size)), replace=False)
+					sample = X_test[random_indicies[0]]
 
-				latent = encoder.predict(sample)[0]
+					latent = encoder.predict(sample)[0]
 
-				plt.figure(figsize=(2*4, 3*4))
-				subplot=0
-				for i in range(0, latent_dim):
-					for j in range(i+1, latent_dim):
+					plt.figure(figsize=(2*4, 3*4))
+					subplot=0
+					for i in range(0, latent_dim):
+						for j in range(i+1, latent_dim):
+							subplot += 1
+							plt.subplot(3,2,subplot)
+							plt.title(iteration)
+							plt.hist2d(latent[:noise_size,i], latent[:noise_size,j], bins=50,range=[[-5,5],[-5,5]], norm=LogNorm(), cmap=cmp_root)
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					plt.savefig('%s%s/LATENT_SPACE.png'%(working_directory,saving_directory),bbox_inches='tight')
+					plt.close('all')
+
+					reco = decoder.predict(latent)
+
+					plt.figure(figsize=(2*4, 3*4))
+					subplot=0
+					for i in range(0, 6):
 						subplot += 1
-						plt.subplot(3,2,subplot)
+						ax = plt.subplot(3,2,subplot)
+						plt.title('%.4f'%scipy.stats.pearsonr(sample[:noise_size,i],reco[:noise_size,i])[0])
+						plt.hist2d(sample[:noise_size,i], reco[:noise_size,i], bins=50, norm=LogNorm(), cmap=cmp_root)
+						lims = [
+						    np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+						    np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+						]
+						plt.plot(lims, lims, 'k-')
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					plt.savefig('%s%s/RECONSTRUCTION.png'%(working_directory,saving_directory),bbox_inches='tight')
+					plt.close('all')
+
+
+					########
+					plt.figure(figsize=(5*4, 3*4))
+					subplot=0
+					for i in range(0, 6):
+						for j in range(i+1, 6):
+							subplot += 1
+							plt.subplot(3,5,subplot)
+							if subplot == 3: plt.title(iteration)
+							plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+							plt.xlabel(axis_titles_boxcox[i])
+							plt.ylabel(axis_titles_boxcox[j])
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					plt.savefig('%s%s/CORERRELATIONS_qt_boxcox.png'%(working_directory,saving_directory),bbox_inches='tight')
+					plt.close('all')
+
+					images = post_process(images)
+					sample = post_process(sample)
+
+					plt.figure(figsize=(3*4, 2*4))
+					subplot=0
+					for i in range(0, 6):
+						subplot += 1
+						plt.subplot(2,3,subplot)
+						if subplot == 2: plt.title(iteration)
+						plt.hist([sample[:noise_size,i], images[:noise_size,i]], bins=50,range=[-1,1], label=['Train','GEN'],histtype='step')
+						plt.yscale('log')
 						plt.title(iteration)
-						plt.hist2d(latent[:noise_size,i], latent[:noise_size,j], bins=50,range=[[-5,5],[-5,5]], norm=LogNorm(), cmap=cmp_root)
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/LATENT_SPACE.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-				reco = decoder.predict(latent)
-
-				plt.figure(figsize=(2*4, 3*4))
-				subplot=0
-				for i in range(0, 6):
-					subplot += 1
-					ax = plt.subplot(3,2,subplot)
-					plt.title('%.4f'%scipy.stats.pearsonr(sample[:noise_size,i],reco[:noise_size,i])[0])
-					plt.hist2d(sample[:noise_size,i], reco[:noise_size,i], bins=50, norm=LogNorm(), cmap=cmp_root)
-					lims = [
-					    np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
-					    np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
-					]
-					plt.plot(lims, lims, 'k-')
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/RECONSTRUCTION.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-
-				########
-				plt.figure(figsize=(5*4, 3*4))
-				subplot=0
-				for i in range(0, 6):
-					for j in range(i+1, 6):
-						subplot += 1
-						plt.subplot(3,5,subplot)
-						if subplot == 3: plt.title(iteration)
-						plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-						plt.xlabel(axis_titles_boxcox[i])
-						plt.ylabel(axis_titles_boxcox[j])
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORERRELATIONS_qt_boxcox.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-				images = post_process(images)
-				sample = post_process(sample)
-
-				plt.figure(figsize=(3*4, 2*4))
-				subplot=0
-				for i in range(0, 6):
-					subplot += 1
-					plt.subplot(2,3,subplot)
-					if subplot == 2: plt.title(iteration)
-					plt.hist([sample[:noise_size,i], images[:noise_size,i]], bins=50,range=[-1,1], label=['Train','GEN'],histtype='step')
-					plt.yscale('log')
-					plt.title(iteration)
-					plt.xlabel(axis_titles_train[i])
-					plt.legend()
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/VALUES.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-				plt.figure(figsize=(5*4, 3*4))
-				subplot=0
-				for i in range(0, 6):
-					for j in range(i+1, 6):
-						subplot += 1
-						plt.subplot(3,5,subplot)
-						if subplot == 3: plt.title(iteration)
-						plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
 						plt.xlabel(axis_titles_train[i])
-						plt.ylabel(axis_titles_train[j])
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
+						plt.legend()
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					plt.savefig('%s%s/VALUES.png'%(working_directory,saving_directory),bbox_inches='tight')
+					plt.close('all')
+
+					plt.figure(figsize=(5*4, 3*4))
+					subplot=0
+					for i in range(0, 6):
+						for j in range(i+1, 6):
+							subplot += 1
+							plt.subplot(3,5,subplot)
+							if subplot == 3: plt.title(iteration)
+							plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+							plt.xlabel(axis_titles_train[i])
+							plt.ylabel(axis_titles_train[j])
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
+					plt.close('all')
 
 
-				if iteration > 0 and calculate_ROC == True:
-					try:
-						clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=4)
+					if iteration > 0 and calculate_ROC == True:
+						try:
+							clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=4)
 
-						bdt_train_size = int(np.shape(sample)[0]/2)
+							bdt_train_size = int(np.shape(sample)[0]/2)
 
-						real_training_data = sample[:bdt_train_size]
+							real_training_data = sample[:bdt_train_size]
 
-						real_test_data = sample[bdt_train_size:]
+							real_test_data = sample[bdt_train_size:]
 
-						fake_training_data = np.squeeze(images[:bdt_train_size])
+							fake_training_data = np.squeeze(images[:bdt_train_size])
 
-						fake_test_data = np.squeeze(images[bdt_train_size:])
+							fake_test_data = np.squeeze(images[bdt_train_size:])
 
-						real_training_labels = np.ones(bdt_train_size)
+							real_training_labels = np.ones(bdt_train_size)
 
-						fake_training_labels = np.zeros(bdt_train_size)
+							fake_training_labels = np.zeros(bdt_train_size)
 
-						total_training_data = np.concatenate((real_training_data, fake_training_data))
+							total_training_data = np.concatenate((real_training_data, fake_training_data))
 
-						total_training_labels = np.concatenate((real_training_labels, fake_training_labels))
+							total_training_labels = np.concatenate((real_training_labels, fake_training_labels))
 
-						clf.fit(total_training_data, total_training_labels)
+							clf.fit(total_training_data, total_training_labels)
 
-						out_real = clf.predict_proba(real_test_data)
+							out_real = clf.predict_proba(real_test_data)
 
-						out_fake = clf.predict_proba(fake_test_data)
+							out_fake = clf.predict_proba(fake_test_data)
 
-						plt.hist([out_real[:,1],out_fake[:,1]], bins = 100,label=['real','gen'], histtype='step')
-						plt.xlabel('Output of BDT')
-						plt.title(iteration)
-						plt.legend(loc='upper right')
-						plt.savefig('%s%s/BDT_out.png'%(working_directory,saving_directory), bbox_inches='tight')
-						plt.close('all')
+							plt.hist([out_real[:,1],out_fake[:,1]], bins = 100,label=['real','gen'], histtype='step')
+							plt.xlabel('Output of BDT')
+							plt.title(iteration)
+							plt.legend(loc='upper right')
+							plt.savefig('%s%s/BDT_out.png'%(working_directory,saving_directory), bbox_inches='tight')
+							plt.close('all')
 
-						ROC_AUC_SCORE_curr = roc_auc_score(np.append(np.ones(np.shape(out_real[:,1])),np.zeros(np.shape(out_fake[:,1]))),np.append(out_real[:,1],out_fake[:,1]))
+							ROC_AUC_SCORE_curr = roc_auc_score(np.append(np.ones(np.shape(out_real[:,1])),np.zeros(np.shape(out_fake[:,1]))),np.append(out_real[:,1],out_fake[:,1]))
 
-						ROC_AUC_SCORE_list = np.append(ROC_AUC_SCORE_list, [[iteration, ROC_AUC_SCORE_curr, training_time]], axis=0)
+							ROC_AUC_SCORE_list = np.append(ROC_AUC_SCORE_list, [[iteration, ROC_AUC_SCORE_curr, training_time]], axis=0)
 
-						if ROC_AUC_SCORE_list[-1][1] < best_ROC_AUC:
-							print('Saving best ROC_AUC.')
-							decoder.save('%s%s/Decoder_best_ROC_AUC.h5'%(working_directory,saving_directory))
-							encoder.save('%s%s/Encoder_best_ROC_AUC.h5'%(working_directory,saving_directory))
-							best_ROC_AUC = ROC_AUC_SCORE_list[-1][1]
-							shutil.copy('%s%s/CORRELATIONS.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
-
-
-
-						plt.figure(figsize=(8,4))
-						plt.title('ROC_AUC_SCORE_list best: %.4f at %d'%(best_ROC_AUC,ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0]))
-						plt.plot(ROC_AUC_SCORE_list[:,0],ROC_AUC_SCORE_list[:,1])
-						plt.axhline(y=best_ROC_AUC,c='k',linestyle='--')
-						plt.axvline(x=ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0],c='k',linestyle='--')
-						plt.savefig('%s%s/ROC_progress.png'%(working_directory,saving_directory))
-						plt.close('all')
-					except:
-						print('Roc failed')
+							if ROC_AUC_SCORE_list[-1][1] < best_ROC_AUC:
+								print('Saving best ROC_AUC.')
+								decoder.save('%s%s/Decoder_best_ROC_AUC.h5'%(working_directory,saving_directory))
+								encoder.save('%s%s/Encoder_best_ROC_AUC.h5'%(working_directory,saving_directory))
+								best_ROC_AUC = ROC_AUC_SCORE_list[-1][1]
+								shutil.copy('%s%s/CORRELATIONS.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
 
 
 
-				print('Saving complete.')
+							plt.figure(figsize=(8,4))
+							plt.title('ROC_AUC_SCORE_list best: %.4f at %d'%(best_ROC_AUC,ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0]))
+							plt.plot(ROC_AUC_SCORE_list[:,0],ROC_AUC_SCORE_list[:,1])
+							plt.axhline(y=best_ROC_AUC,c='k',linestyle='--')
+							plt.axvline(x=ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0],c='k',linestyle='--')
+							plt.savefig('%s%s/ROC_progress.png'%(working_directory,saving_directory))
+							plt.close('all')
+						except:
+							print('Roc failed')
 
+
+
+					print('Saving complete.')
+				except:
+					print('Saving failed at some point and for some unknown reason.')
 
