@@ -316,7 +316,7 @@ for epoch in range(int(1E30)):
 		elif loss_boosting == True:
 			boost_weights = np.sqrt(X_train[:,-1])
 			boost_weights = np.squeeze(boost_weights/np.sum(boost_weights))
-			X_train = np.concatenate((X_train, np.expand_dims(boost_weights,1)),axis=1)
+			X_train = np.concatenate((X_train, np.expand_dims(boost_weights,1)*np.shape(X_train)[0]),axis=1)
 
 		if iteration == -1:
 			plt.figure(figsize=(5*4, 3*4))
