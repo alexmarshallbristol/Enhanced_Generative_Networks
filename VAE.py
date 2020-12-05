@@ -88,7 +88,11 @@ save_interval = 25000
 
 calculate_ROC = True
 
-sample_boosting = True
+sample_boosting = False
+loss_boosting = True
+if loss_boosting == True and sample_boosting == True:
+	print('You cant have everything...')
+	quit()
 latent_dim = 4
 original_dim = 6
 kl_factor = 1E-4
@@ -228,7 +232,7 @@ def train_step(images):
 	return vae_kl_loss, vae_reco_loss
 
 @tf.function
-def train_step_boosted(images):
+def train_step_sample_boosting(images):
 
 	pdg, images, aux_values_BIN, un_boost_latent = images[:,:,0], images[:,0,1:7], images[:,:,7:-1], images[:,:,-1]
 
@@ -239,6 +243,28 @@ def train_step_boosted(images):
 		vae_reco_loss = reco_loss(images, vae_out)
 		vae_reco_loss = tf.math.reduce_mean(vae_reco_loss)
 		vae_kl_loss = kl_loss(vae_z_mean, vae_z_log_var)*un_boost_latent
+		vae_kl_loss = tf.math.reduce_mean(vae_kl_loss)
+
+		vae_loss = vae_kl_loss*kl_factor + vae_reco_loss*reco_factor
+
+	grad_vae = tape.gradient(vae_loss, vae.trainable_variables)
+
+	optimizer.apply_gradients(zip(grad_vae, vae.trainable_variables))
+
+	return vae_kl_loss, vae_reco_loss
+
+@tf.function
+def train_step_loss_boosting(images):
+
+	pdg, images, aux_values_BIN, loss_boost = images[:,:,0], images[:,0,1:7], images[:,:,7:-1], images[:,:,-1]
+
+	with tf.GradientTape() as tape:
+
+		vae_out, vae_z_mean, vae_z_log_var = vae(images)
+
+		vae_reco_loss = reco_loss(images, vae_out)
+		vae_reco_loss = tf.math.reduce_mean(vae_reco_loss)*loss_boost
+		vae_kl_loss = kl_loss(vae_z_mean, vae_z_log_var)
 		vae_kl_loss = tf.math.reduce_mean(vae_kl_loss)
 
 		vae_loss = vae_kl_loss*kl_factor + vae_reco_loss*reco_factor
@@ -287,6 +313,10 @@ for epoch in range(int(1E30)):
 			weight_back_down = boost_weights**-1
 			weight_back_down = np.squeeze(weight_back_down/np.sum(weight_back_down))*np.shape(X_train)[0]
 			X_train = np.concatenate((X_train, np.expand_dims(weight_back_down,1)),axis=1)
+		elif loss_boosting == True:
+			boost_weights = np.sqrt(X_train[:,-1])
+			boost_weights = np.squeeze(boost_weights/np.sum(boost_weights))
+			X_train = np.concatenate((X_train, np.expand_dims(boost_weights,1)),axis=1)
 
 		if iteration == -1:
 			plt.figure(figsize=(5*4, 3*4))
@@ -320,7 +350,9 @@ for epoch in range(int(1E30)):
 			iteration += 1
 
 			if sample_boosting == True:
-				kl_loss_np, reco_loss_np = train_step_boosted(images_for_batch)
+				kl_loss_np, reco_loss_np = train_step_sample_boosting(images_for_batch)
+			elif loss_boosting == True:
+				kl_loss_np, reco_loss_np = train_step_loss_boosting(images_for_batch)
 			else:
 				kl_loss_np, reco_loss_np = train_step(images_for_batch)
 
