@@ -97,8 +97,6 @@ D_architecture_aux = [32, 64]
 weight_of_vanilla_loss = 10.
 weight_of_reco_loss = 1.
 
-AAE_decoder = load_model('/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/AAE/DECODER.h5')
-
 trans_1 = load(open('%strans_1.pkl'%transformer_directory, 'rb'))
 trans_2 = load(open('%strans_2.pkl'%transformer_directory, 'rb'))
 trans_3 = load(open('%strans_3.pkl'%transformer_directory, 'rb'))
@@ -249,8 +247,7 @@ def train_step(images, weight_of_reco_loss_inner):
 	images, aux_values_r, aux_values_z, aux_values_pt, aux_values_pz = images[:,:,:7], images[:,:,7], images[:,:,8], images[:,:,9], images[:,:,10]
 
 	noise = tf.random.normal([batch_size, 1, 100])
-	# aux = tf.math.abs(tf.random.normal([batch_size, 1, 4]))
-	aux = tf.expand_dims(AAE_decoder(tf.math.abs(tf.random.normal([batch_size, 4]))),1)
+	aux = tf.math.abs(tf.random.normal([batch_size, 1, 4]))
 	charge_gan = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
 
 	generated_images = generator([noise, aux, charge_gan])
@@ -265,8 +262,7 @@ def train_step(images, weight_of_reco_loss_inner):
 		disc_loss = tf.keras.losses.binary_crossentropy(tf.squeeze(labels_D),tf.squeeze(out_values_choice))
 
 	noise_stacked = tf.random.normal((batch_size, 1, 100), 0, 1)
-	# aux_stacked = tf.math.abs(tf.random.normal([batch_size, 1, 4]))
-	aux_stacked = tf.expand_dims(AAE_decoder(tf.math.abs(tf.random.normal([batch_size, 4]))),1)
+	aux_stacked = tf.math.abs(tf.random.normal([batch_size, 1, 4]))
 	charge_stacked = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
 	labels_stacked = tf.ones((batch_size, 1))
 
@@ -393,8 +389,7 @@ for epoch in range(int(1E30)):
 				if iteration == 0: noise_size = 10
 					
 				charge_gan = np.random.choice([-1,1],size=(noise_size,1,1),p=[1-0.5,0.5],replace=True)
-				# aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,4)))
-				aux_gan = AAE_decoder.predict(np.abs(np.random.normal(0,1,size=(noise_size,4))))
+				aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,4)))
 				gen_noise = np.random.normal(0, 1, (int(noise_size), 100))
 				images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan])
 
