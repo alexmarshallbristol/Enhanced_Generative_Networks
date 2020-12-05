@@ -279,7 +279,7 @@ for epoch in range(int(1E30)):
 		X_train = np.take(X_train,np.random.permutation(X_train.shape[0]),axis=0,out=X_train)
 
 		if sample_boosting == True:
-			boost_weights = X_train[:,-1]
+			boost_weights = np.sqrt(X_train[:,-1])
 			boost_weights = np.squeeze(boost_weights/np.sum(boost_weights))
 			list_for_np_choice = np.arange(np.shape(boost_weights)[0])
 			random_indicies_order = np.random.choice(list_for_np_choice, size=np.shape(X_train)[0], p=boost_weights, replace=True) 
