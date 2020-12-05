@@ -262,8 +262,8 @@ def train_step_loss_boosting(images):
 
 		vae_out, vae_z_mean, vae_z_log_var = vae(images)
 
-		vae_reco_loss = reco_loss(images, vae_out)
-		vae_reco_loss = tf.math.reduce_mean(vae_reco_loss)*loss_boost
+		vae_reco_loss = reco_loss(images, vae_out)*loss_boost
+		vae_reco_loss = tf.math.reduce_mean(vae_reco_loss)
 		vae_kl_loss = kl_loss(vae_z_mean, vae_z_log_var)
 		vae_kl_loss = tf.math.reduce_mean(vae_kl_loss)
 
