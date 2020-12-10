@@ -53,21 +53,22 @@ def split_tensor(index, x):
 
 print(tf.__version__)
 
-# working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/PRE_TRAIN/'
-# training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
-# transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
-# training_name = 'data*.npy'
-# saving_directory = ''
-# save_interval = 25000
-
-working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
-training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
-transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-training_name = 'data*.npy'
+working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/PRE_TRAIN/'
+training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
+transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
+training_name = 'relu*.npy'
 saving_directory = ''
-save_interval = 50000
+# save_interval = 250000
+save_interval = 100000
 
-close_script_at = save_interval * 10 + 1
+# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
+# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# training_name = 'relu*.npy'
+# saving_directory = ''
+# save_interval = 50000
+
+close_script_at = save_interval + 5
 
 batch_size = 50
 
@@ -119,24 +120,6 @@ elif configuration == 4:
 else:
 	print('Broken')
 	quit()
-
-trans_1 = load(open('%strans_1.pkl'%transformer_directory, 'rb'))
-trans_2 = load(open('%strans_2.pkl'%transformer_directory, 'rb'))
-trans_3 = load(open('%strans_3.pkl'%transformer_directory, 'rb'))
-trans_4 = load(open('%strans_4.pkl'%transformer_directory, 'rb'))
-trans_5 = load(open('%strans_5.pkl'%transformer_directory, 'rb'))
-trans_6 = load(open('%strans_6.pkl'%transformer_directory, 'rb'))
-
-def inverse_transform_qt_boxcox(input_array):
-	input_array[:,0] = np.squeeze(trans_1.inverse_transform(np.expand_dims(input_array[:,0],1)*7.))
-	input_array[:,1] = np.squeeze(trans_2.inverse_transform(np.expand_dims(input_array[:,1],1)*7.))
-	input_array[:,2] = np.squeeze(trans_3.inverse_transform(np.expand_dims(input_array[:,2],1)*7.))
-	input_array[:,3] = np.squeeze(trans_4.inverse_transform(np.expand_dims(input_array[:,3],1)*7.))
-	input_array[:,4] = np.squeeze(trans_5.inverse_transform(np.expand_dims(input_array[:,4],1)*7.))
-	input_array[:,5] = np.squeeze(trans_6.inverse_transform(np.expand_dims(input_array[:,5],1)*7.))
-	input_array = ((input_array - 0.1) * 2.4) - 1.
-	return input_array
-
 
 print(' ')
 print('Initializing networks...')
@@ -262,8 +245,6 @@ for epoch in range(int(1E30)):
 				images = X_train[random_indicies[0]][:,:,:7]
 
 				aux_guess = np.squeeze(discriminator_aux_pt.predict(images))
-
-				images[:,0,1:7] = inverse_transform_qt_boxcox(images[:,0,1:7])
 
 				plt.figure(figsize=(8,4))
 				plt.subplot(1,2,1)
