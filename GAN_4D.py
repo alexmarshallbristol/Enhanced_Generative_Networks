@@ -270,8 +270,8 @@ def train_step(images, weight_of_reco_loss_inner):
 	noise = tf.random.normal([batch_size, 1, 100])
 	aux = tf.math.abs(tf.random.normal([batch_size, 1, 4]))
 	charge_gan = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
-	theta_gan = tf.random.uniform([batch_size, 1, 1])
-	theta_pt_gan = tf.random.uniform([batch_size, 1, 1])
+	theta_gan = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
+	theta_pt_gan = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
 
 	generated_images = generator([noise, aux, charge_gan, theta_gan, theta_pt_gan])
 
@@ -288,8 +288,8 @@ def train_step(images, weight_of_reco_loss_inner):
 	aux_stacked = tf.math.abs(tf.random.normal([batch_size, 1, 4]))
 	charge_stacked = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
 	labels_stacked = tf.ones((batch_size, 1))
-	theta_stacked = tf.random.uniform([batch_size, 1, 1])
-	theta_pt_stacked = tf.random.uniform([batch_size, 1, 1])
+	theta_stacked = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
+	theta_pt_stacked = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
 
 	with tf.GradientTape(persistent=True) as gen_tape:
 		fake_images2 = generator([noise_stacked, aux_stacked, charge_stacked, theta_stacked, theta_pt_stacked], training=True)
@@ -429,8 +429,8 @@ for epoch in range(int(1E30)):
 				charge_gan = np.random.choice([-1,1],size=(noise_size,1,1),p=[1-0.5,0.5],replace=True)
 				aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,4)))
 				gen_noise = np.random.normal(0, 1, (int(noise_size), 100))
-				theta_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))
-				theta_pt_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))
+				theta_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*0.97+0.015
+				theta_pt_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*0.97+0.015
 				images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan, theta_gan, theta_pt_gan])
 
 				images = np.squeeze(images)
