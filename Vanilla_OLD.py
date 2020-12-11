@@ -52,74 +52,75 @@ colours_raw_root = [[250,242,108],
 colours_raw_root = np.flip(np.divide(colours_raw_root,256.),axis=0)
 cmp_root = mpl.colors.ListedColormap(colours_raw_root)
 
-
-# data = np.load('/Users/am13743/Aux_GAN_thesis/TRAINING/DATA/smear_8.npy')
-
-# plt.figure(figsize=(5*4, 3*4))
-# subplot=0
-# for i in range(0, 6):
-# 	for j in range(i+1, 6):
-# 		subplot += 1
-# 		plt.subplot(3,5,subplot)
-# 		plt.hist2d(data[:,i+1], data[:,j+1], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-# plt.subplots_adjust(wspace=0.3, hspace=0.3)
-# plt.savefig('test.png',bbox_inches='tight')
-# plt.close('all')
-
-# quit()
-
-
-
 def _loss_generator(y_true, y_pred):
 	y_pred = K.clip(y_pred, _EPSILON, 1.0-_EPSILON)
 	out = -(K.log(y_pred))
 	return K.mean(out, axis=-1)
 
+def split_tensor(index, x):
+    return Lambda(lambda x : x[:,:,index])(x)
+
 print(tf.__version__)
 
-# working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
-# training_directory = '/Users/am13743/Aux_GAN_thesis/TRAINING/DATA/'
-# transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
-# training_name = 'smear*.npy'
-# testing_name = 'smear*.npy'
-# saving_directory = 'Vanilla_OLD'
-# save_interval = 500
-
-working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/DATA/'
-transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
+training_directory = '/Users/am13743/Aux_GAN_thesis/TRAINING/DATA/'
+transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
 training_name = 'smear*.npy'
-testing_name = 'smear*.npy'
 saving_directory = 'Vanilla_OLD'
-save_interval = 25000
+save_interval = 15
+min_max_GAN_paper = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_GAN_paper.npy')
+min_max_smear = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_smear.npy')
+min_max_ptparam = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_ptparam.npy')
+
+
+# working_directory = 'TRAINING/'
+# training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+# training_name = 'smear*.npy'
+# saving_directory = 'Vanilla_OLD'
+# save_interval = 25000
+# min_max_GAN_paper = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_GAN_paper.npy')
+# min_max_smear = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_smear.npy')
+# min_max_ptparam = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_ptparam.npy')
+
+
+def post_process_scaling(input_array, min_max):
+	input_array[:,0] = (((input_array[:,0]+0.97)/1.94)*(min_max[0][1] - min_max[0][0])+ min_max[0][0])
+	input_array[:,1] = (((input_array[:,1]+0.97)/1.94)*(min_max[1][1] - min_max[1][0])+ min_max[1][0])
+	input_array[:,2] = (((input_array[:,2]+1.)/1.97)*(min_max[2][1] - min_max[2][0])+ min_max[2][0])
+	input_array[:,3] = (((input_array[:,3]+0.97)/1.94)*(min_max[3][1] - min_max[3][0])+ min_max[3][0])
+	input_array[:,4] = (((input_array[:,4]+0.97)/1.94)*(min_max[4][1] - min_max[4][0])+ min_max[4][0])
+	input_array[:,5] = (((input_array[:,5]+0.97)/1.94)*(min_max[5][1] - min_max[5][0])+ min_max[5][0])
+	return input_array
+
+def pxpy_to_ptparam(input_array):
+	r = np.expand_dims(np.sqrt(input_array[:,0]**2+input_array[:,1]**2),1)
+	theta = np.expand_dims(np.arctan2(input_array[:,0],input_array[:,1]),1)
+	z = np.expand_dims(input_array[:,2],1)
+	pt = np.expand_dims(np.sqrt(input_array[:,3]**2+input_array[:,4]**2),1)
+	pt_theta = np.expand_dims(np.arctan2(input_array[:,3],input_array[:,4]),1)
+	pz = np.expand_dims(input_array[:,5],1)
+	input_array = np.concatenate((r,theta,z,pt,pt_theta,pz),axis=1)
+	return input_array
+
+def pre_process_scaling(input_array, min_max):
+	for index in [0,1,3,4,5]:
+		range_i = min_max[index][1] - min_max[index][0]
+		input_array[:,index] = ((input_array[:,index] - min_max[index][0])/range_i) * 1.94 - 0.97
+	for index in [2]:
+		range_i = min_max[index][1] - min_max[index][0]
+		input_array[:,index] = ((input_array[:,index] - min_max[index][0])/range_i) * 1.97 - 1
+	return input_array
+
 
 calculate_ROC = True
 
 batch_size = 50
 
-G_architecture = [1000,1000]
-D_architecture = [1000,1000]
+G_architecture = [1000,1000,250,50]
+D_architecture = [1000,1000,250,50]
 
-
-# trans_1 = load(open('%strans_1.pkl'%transformer_directory, 'rb'))
-# trans_2 = load(open('%strans_2.pkl'%transformer_directory, 'rb'))
-# trans_3 = load(open('%strans_3.pkl'%transformer_directory, 'rb'))
-# trans_4 = load(open('%strans_4.pkl'%transformer_directory, 'rb'))
-# trans_5 = load(open('%strans_5.pkl'%transformer_directory, 'rb'))
-# trans_6 = load(open('%strans_6.pkl'%transformer_directory, 'rb'))
-
-# def post_process(input_array):
-# 	output_array = np.empty(np.shape(input_array))
-# 	output_array[:,0] = np.squeeze(trans_1.inverse_transform(np.expand_dims(input_array[:,0],1)*7.))
-# 	output_array[:,1] = np.squeeze(trans_2.inverse_transform(np.expand_dims(input_array[:,1],1)*7.))
-# 	output_array[:,2] = np.squeeze(trans_3.inverse_transform(np.expand_dims(input_array[:,2],1)*7.))
-# 	output_array[:,3] = np.squeeze(trans_4.inverse_transform(np.expand_dims(input_array[:,3],1)*7.))
-# 	output_array[:,4] = np.squeeze(trans_5.inverse_transform(np.expand_dims(input_array[:,4],1)*7.))
-# 	output_array[:,5] = np.squeeze(trans_6.inverse_transform(np.expand_dims(input_array[:,5],1)*7.))
-# 	output_array = ((output_array - 0.1) * 2.4) - 1.
-# 	for i in range(0, 6): # Transformers do not work well with extreme values, not an issue once the network is trained a little, but want to get ROC values for young network
-# 		output_array[np.where(np.isnan(output_array[:,i])==True)] = np.sign(input_array[np.where(np.isnan(output_array[:,i])==True)])
-# 	return output_array
 
 list_of_training_files = glob.glob('%s%s'%(training_directory,training_name))
 
@@ -159,11 +160,12 @@ H = LeakyReLU(alpha=0.2)(H)
 H = BatchNormalization(momentum=0.8)(H)
 
 for layer in G_architecture[1:]:
+
 	H = Dense(int(layer))(H)
 	H = LeakyReLU(alpha=0.2)(H)
 	H = BatchNormalization(momentum=0.8)(H)
 
-H = Dense(6, activation='tanh')(H)
+H = Dense(6,activation='tanh')(H)
 
 g_output = Reshape((1,6))(H)
 
@@ -260,38 +262,6 @@ for epoch in range(int(1E30)):
 
 		X_train = np.take(X_train,np.random.permutation(X_train.shape[0]),axis=0,out=X_train)
 
-		# plt.figure(figsize=(5*4, 3*4))
-		# subplot=0
-		# for i in range(0, 6):
-		# 	for j in range(i+1, 6):
-		# 		subplot += 1
-		# 		plt.subplot(3,5,subplot)
-		# 		if subplot == 3: plt.title(iteration)
-		# 		plt.hist2d(X_train[:,i+1], X_train[:,j+1], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-		# 		plt.xlabel(axis_titles_boxcox[i])
-		# 		plt.ylabel(axis_titles_boxcox[j])
-		# plt.subplots_adjust(wspace=0.3, hspace=0.3)
-		# plt.savefig('%s%s/test.png'%(working_directory,saving_directory),bbox_inches='tight')
-		# plt.close('all')
-
-		# X_train[:,1:7] = post_process(X_train[:,1:7])	
-
-		# plt.figure(figsize=(5*4, 3*4))
-		# subplot=0
-		# for i in range(0, 6):
-		# 	for j in range(i+1, 6):
-		# 		subplot += 1
-		# 		plt.subplot(3,5,subplot)
-		# 		if subplot == 3: plt.title(iteration)
-		# 		plt.hist2d(X_train[:,i+1], X_train[:,j+1], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-		# 		plt.xlabel(axis_titles_boxcox[i])
-		# 		plt.ylabel(axis_titles_boxcox[j])
-		# plt.subplots_adjust(wspace=0.3, hspace=0.3)
-		# plt.savefig('%s%s/test.png'%(working_directory,saving_directory),bbox_inches='tight')
-		# plt.close('all')
-
-		# quit()
-
 		print('Train images shape -',np.shape(X_train))
 
 		list_for_np_choice = np.arange(np.shape(X_train)[0])
@@ -354,38 +324,6 @@ for epoch in range(int(1E30)):
 
 				samples = X_train[:,0,1:-5].copy()
 
-				plt.figure(figsize=(5*4, 3*4))
-				subplot=0
-				for i in range(0, 6):
-					for j in range(i+1, 6):
-						subplot += 1
-						plt.subplot(3,5,subplot)
-						if subplot == 3: plt.title(iteration)
-						plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-						plt.xlabel(axis_titles_train[i])
-						plt.ylabel(axis_titles_train[j])
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORRELATIONS_qt_boxcox.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-
-				plt.figure(figsize=(3*4, 2*4))
-				subplot=0
-				for i in range(0, 6):
-					subplot += 1
-					plt.subplot(2,3,subplot)
-					if subplot == 2: plt.title(iteration)
-					plt.hist([samples[:noise_size,i], images[:noise_size,i]], bins=50,range=[-1,1], label=['Train','GEN'],histtype='step')
-					plt.yscale('log')
-					plt.xlabel(axis_titles_train[i])
-					if axis_titles_train[i] == 'z': plt.legend()
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/VALUES_pre.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-				# images = post_process(images)				
-				# samples = post_process(samples)
-
 				plt.figure(figsize=(3*4, 2*4))
 				subplot=0
 				for i in range(0, 6):
@@ -411,7 +349,7 @@ for epoch in range(int(1E30)):
 						plt.xlabel(axis_titles_train[i])
 						plt.ylabel(axis_titles_train[j])
 				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
+				# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
 				plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
 				plt.close('all')
 
@@ -428,7 +366,17 @@ for epoch in range(int(1E30)):
 						clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=4)
 
 						random_indicies = np.random.choice(list_for_np_choice, size=(noise_size), replace=False)
-						X_train_sample = samples[random_indicies]
+						X_train_sample = samples[random_indicies].copy()
+
+						X_train_sample = post_process_scaling(X_train_sample,min_max_smear)
+						X_train_sample = pxpy_to_ptparam(X_train_sample)
+						X_train_sample = pre_process_scaling(X_train_sample,min_max_ptparam)
+						X_train_sample = (X_train_sample + 1.)/2.
+
+						images = post_process_scaling(images,min_max_smear)
+						images = pxpy_to_ptparam(images)
+						images = pre_process_scaling(images,min_max_ptparam)
+						images = (images + 1.)/2.
 
 						bdt_train_size = int(np.shape(images)[0]/2)
 
