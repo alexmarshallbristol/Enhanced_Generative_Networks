@@ -74,16 +74,29 @@ print(tf.__version__)
 # weight_of_reco_kicks_in_at = 0
 # weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
 
-working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
+# training_name = 'relu*.npy'
+# testing_name = 'test_relu*.npy'
+# saving_directory = 'GAN_4D'
+# save_interval = 25000
+# weight_of_reco_kicks_in_at = 0
+# weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
+
+
+working_directory = 'TRAINING/'
+training_directory = '/hdfs/user/am13743/THESIS/DATA/'
 transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
+pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
 training_name = 'relu*.npy'
 testing_name = 'test_relu*.npy'
 saving_directory = 'GAN_4D'
 save_interval = 25000
 weight_of_reco_kicks_in_at = 0
 weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
+
 
 
 calculate_ROC = True
@@ -94,8 +107,9 @@ batch_size = 50
 # G_architecture = [1000,1000]
 # D_architecture = [1000,1000]
 
-G_architecture = [250,750,250]
-D_architecture = [250,750,250]
+G_architecture = [500,1000,250,50]
+D_architecture = [500,1000,250,50]
+
 
 D_architecture_aux = [32, 64]
 
@@ -105,24 +119,24 @@ weight_of_reco_loss = 1.
 
 list_of_training_files = glob.glob('%s%s'%(training_directory,training_name))
 
-try:
-	files_to_remove = glob.glob('%s%s/CORRELATIONS/Correlations_*.png'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-except:
-	print('/CORRELATIONS/ already clean')
-try:
-	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-	files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-	files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-except:
-	print('Output directory already clean')
+# try:
+# 	files_to_remove = glob.glob('%s%s/CORRELATIONS/Correlations_*.png'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# except:
+# 	print('/CORRELATIONS/ already clean')
+# try:
+# 	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# 	files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# 	files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# except:
+# 	print('Output directory already clean')
 
 
 print(' ')
@@ -450,7 +464,7 @@ for epoch in range(int(1E30)):
 						plt.xlabel(axis_titles[i])
 						plt.ylabel(axis_titles[j])
 				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
+				# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
 				plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
 				plt.close('all')
 
@@ -486,7 +500,7 @@ for epoch in range(int(1E30)):
 							plt.ylabel(axis_titles[j])
 					plt.subplots_adjust(wspace=0.3, hspace=0.3)
 					plt.savefig('%s%s/CORRELATIONS_2_5.png'%(working_directory,saving_directory),bbox_inches='tight')
-					plt.savefig('%s%s/CORRELATIONS/Correlations_2_5_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
+					# plt.savefig('%s%s/CORRELATIONS/Correlations_2_5_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
 					plt.close('all')
 
 				if iteration > 0 and calculate_ROC == True:

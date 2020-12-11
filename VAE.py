@@ -56,37 +56,42 @@ def sampling(args):
 	z_mean, z_log_var = args
 	epsilon = K.random_normal(shape=K.shape(z_mean), mean=0, stddev=1)
 	return z_mean + K.exp(z_log_var / 2) * epsilon
-    
+	
 def reco_loss(x, x_decoded_mean):
-    xent_loss = tf.keras.losses.mean_squared_error(x, x_decoded_mean)
-    return xent_loss
+	# print(x)
+	# print(x_decoded_mean)
+	# xent_loss = tf.keras.losses.mean_absolute_error(x, x_decoded_mean)
+	xent_loss = tf.keras.losses.binary_crossentropy(x, x_decoded_mean)
+	# print(xent_loss)
+	# quit(0)
+	return xent_loss
 
 def reco_loss_boost_pz(x, x_decoded_mean):
-    xent_loss_A = tf.keras.losses.mean_squared_error(x[:,0], x_decoded_mean[:,0])
-    xent_loss_B = tf.keras.losses.mean_squared_error(x[:,1], x_decoded_mean[:,1])
-    xent_loss_C = tf.keras.losses.mean_squared_error(x[:,2], x_decoded_mean[:,2])
-    xent_loss_D = tf.keras.losses.mean_squared_error(x[:,3], x_decoded_mean[:,3])
-    xent_loss_E = tf.keras.losses.mean_squared_error(x[:,4], x_decoded_mean[:,4])
-    xent_loss_F = tf.keras.losses.mean_squared_error(x[:,5], x_decoded_mean[:,5])
-    xent_loss = xent_loss_A + xent_loss_B + xent_loss_C*z_boost_factor + xent_loss_D*pt_boost_factor + xent_loss_E + xent_loss_F*pz_boost_factor
-    return xent_loss
+	xent_loss_A = tf.keras.losses.mean_squared_error(x[:,0], x_decoded_mean[:,0])
+	xent_loss_B = tf.keras.losses.mean_squared_error(x[:,1], x_decoded_mean[:,1])
+	xent_loss_C = tf.keras.losses.mean_squared_error(x[:,2], x_decoded_mean[:,2])
+	xent_loss_D = tf.keras.losses.mean_squared_error(x[:,3], x_decoded_mean[:,3])
+	xent_loss_E = tf.keras.losses.mean_squared_error(x[:,4], x_decoded_mean[:,4])
+	xent_loss_F = tf.keras.losses.mean_squared_error(x[:,5], x_decoded_mean[:,5])
+	xent_loss = xent_loss_A + xent_loss_B + xent_loss_C*z_boost_factor + xent_loss_D*pt_boost_factor + xent_loss_E + xent_loss_F*pz_boost_factor
+	return xent_loss
 
 def kl_loss(z_mean, z_log_var):
-    kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
-    return kl_loss
+	kl_loss = - 0.5 * K.sum(1 + z_log_var - K.square(z_mean) - K.exp(z_log_var), axis=-1)
+	return kl_loss
 
 def split_tensor(index, x):
-    return Lambda(lambda x : x[:,index])(x)
+	return Lambda(lambda x : x[:,index])(x)
 
 print(tf.__version__)
 
-working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
-training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
-transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
-training_name = 'relu*.npy'
-testing_name = 'test_relu*.npy'
-saving_directory = 'VAE'
-save_interval = 1000
+# working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
+# training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
+# transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
+# training_name = 'relu*.npy'
+# testing_name = 'test_relu*.npy'
+# saving_directory = 'VAE'
+# save_interval = 1000
 
 # working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
 # training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
@@ -96,7 +101,18 @@ save_interval = 1000
 # saving_directory = 'VAE'
 # save_interval = 25000
 
-calculate_ROC = False
+
+working_directory = 'TRAINING/'
+training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+training_name = 'relu*.npy'
+testing_name = 'test_relu*.npy'
+saving_directory = 'VAE'
+save_interval = 25000
+
+
+calculate_ROC = True
 
 sample_boosting = False
 loss_boosting = False
@@ -115,20 +131,14 @@ kl_factor = 1E-4
 reco_factor = 1
 
 batch_size = 50
-E_architecture = [128,128,128]
-D_architecture = [128,128,128]
+# E_architecture = [128,128,128]
+# D_architecture = [128,128,128]
 
-# batch_size = 50
-# E_architecture = [1000,1000]
-# D_architecture = [1000,1000]
-
-# batch_size = 512
-# E_architecture = [250,500,500,250]
-# D_architecture = [250,500,500,250]
-
+E_architecture = [250,500,250]
+D_architecture = [250,500,250]
 
 def split_tensor(index, x):
-    return Lambda(lambda x : x[:,index])(x)
+	return Lambda(lambda x : x[:,index])(x)
 
 
 list_of_training_files = glob.glob('%s%s'%(training_directory,training_name))
@@ -137,24 +147,24 @@ X_test = np.load(list_of_testing_files[0])
 pdg_info_test, X_test, aux_values_test, aux_values_4D_test = np.split(X_test, [1,-5,-1], axis=1)
 list_for_np_choice_test = np.arange(np.shape(X_test)[0]) 
 
-try:
-	files_to_remove = glob.glob('%s%s/CORRELATIONS/Correlations_*.png'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-except:
-	print('/CORRELATIONS/ already clean')
-try:
-	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-	files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-	files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-except:
-	print('Output directory already clean')
+# try:
+# 	files_to_remove = glob.glob('%s%s/CORRELATIONS/Correlations_*.png'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# except:
+# 	print('/CORRELATIONS/ already clean')
+# try:
+# 	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# 	files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# 	files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# except:
+# 	print('Output directory already clean')
 
 
 print(' ')
@@ -172,12 +182,13 @@ input_sample_in = Concatenate(axis=-1)([input_sample,H_theta,H_pt_theta])
 H = Dense(int(E_architecture[0]))(input_sample_in)
 H = BatchNormalization(momentum=0.8)(H)
 H = LeakyReLU(alpha=0.2)(H)
-
+H = Dropout(0.2)(H)
 
 for layer in E_architecture[1:]:
 	H = Dense(int(layer))(H)
 	H = BatchNormalization(momentum=0.8)(H)
 	H = LeakyReLU(alpha=0.2)(H)
+	H = Dropout(0.2)(H)
 
 z_mean = Dense(latent_dim)(H)
 z_log_var = Dense(latent_dim)(H)
@@ -198,14 +209,15 @@ input_latent_in = Concatenate()([input_latent,H_theta,H_pt_theta])
 H = Dense(int(D_architecture[0]))(input_latent_in)
 H = BatchNormalization(momentum=0.8)(H)
 H = LeakyReLU(alpha=0.2)(H)
+H = Dropout(0.2)(H)
 
 for layer in D_architecture[1:]:
 	H = Dense(int(layer))(H)
 	H = BatchNormalization(momentum=0.8)(H)
 	H = LeakyReLU(alpha=0.2)(H)
-	# H = Dropout(0.2)(H)
+	H = Dropout(0.2)(H)
 
-decoded_mean = Dense(original_dim,activation='tanh')(H)
+decoded_mean = Dense(original_dim)(H)
 
 H_r = split_tensor(0, H)
 H_r = Activation('sigmoid')(H_r)
@@ -319,7 +331,7 @@ for epoch in range(int(1E30)):
 					subplot += 1
 					plt.subplot(3,5,subplot)
 					if subplot == 3: plt.title(iteration)
-					plt.hist2d(X_train[:,i+1], X_train[:,j+1], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+					plt.hist2d(X_train[:,i+1], X_train[:,j+1], bins=50,range=[[0,1],[0,1]], norm=LogNorm(), cmap=cmp_root)
 					plt.xlabel(axis_titles_boxcox[i])
 					plt.ylabel(axis_titles_boxcox[j])
 			plt.subplots_adjust(wspace=0.3, hspace=0.3)
@@ -431,8 +443,8 @@ for epoch in range(int(1E30)):
 					plt.title('%.4f'%scipy.stats.pearsonr(sample[:noise_size,i],reco[:noise_size,i])[0])
 					plt.hist2d(sample[:noise_size,i], reco[:noise_size,i], bins=50, norm=LogNorm(), cmap=cmp_root)
 					lims = [
-					    np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
-					    np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+						np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+						np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
 					]
 					plt.plot(lims, lims, 'k-')
 				plt.subplots_adjust(wspace=0.3, hspace=0.3)
@@ -469,7 +481,7 @@ for epoch in range(int(1E30)):
 						plt.ylabel(axis_titles_train[j])
 				plt.subplots_adjust(wspace=0.3, hspace=0.3)
 				plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
+				# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
 				plt.close('all')
 
 
