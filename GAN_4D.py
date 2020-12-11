@@ -100,15 +100,16 @@ weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
 
 
 calculate_ROC = True
-test_boosting = True
+test_boosting = False
 
 batch_size = 50
 
 # G_architecture = [1000,1000]
 # D_architecture = [1000,1000]
 
-G_architecture = [500,1000,250,50]
-D_architecture = [500,1000,250,50]
+# A
+G_architecture = [1000,1000,250,50]
+D_architecture = [1000,1000,250,50]
 
 
 D_architecture_aux = [32, 64]
@@ -125,18 +126,18 @@ list_of_training_files = glob.glob('%s%s'%(training_directory,training_name))
 # 		os.remove(file_i)
 # except:
 # 	print('/CORRELATIONS/ already clean')
-# try:
-# 	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
-# 	for file_i in files_to_remove:
-# 		os.remove(file_i)
-# 	files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
-# 	for file_i in files_to_remove:
-# 		os.remove(file_i)
-# 	files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
-# 	for file_i in files_to_remove:
-# 		os.remove(file_i)
-# except:
-# 	print('Output directory already clean')
+try:
+	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
+	for file_i in files_to_remove:
+		os.remove(file_i)
+	files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
+	for file_i in files_to_remove:
+		os.remove(file_i)
+	files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
+	for file_i in files_to_remove:
+		os.remove(file_i)
+except:
+	print('Output directory already clean')
 
 
 print(' ')
@@ -177,10 +178,6 @@ H_r = split_tensor(0, H)
 H_r = Activation('sigmoid')(H_r)
 H_r = Reshape((1,1))(H_r)
 
-# H_theta = split_tensor(1, H)
-# H_theta = ReLU(max_value=1)(H_theta)
-# H_theta = Reshape((1,1))(H_theta)
-
 H_z = split_tensor(2, H)
 H_z = Activation('tanh')(H_z)
 H_z = ReLU()(H_z)
@@ -191,18 +188,12 @@ H_pt = Activation('tanh')(H_pt)
 H_pt = ReLU()(H_pt)
 H_pt = Reshape((1,1))(H_pt)
 
-# H_pt_theta = split_tensor(4, H)
-# H_pt_theta = ReLU(max_value=1)(H_pt_theta)
-# H_pt_theta = Reshape((1,1))(H_pt_theta)
-
 H_pz = split_tensor(5, H)
 H_pz = Activation('tanh')(H_pz)
 H_pz = ReLU()(H_pz)
 H_pz = Reshape((1,1))(H_pz)
 
 g_output = Concatenate(axis=-1)([H_r, H_theta, H_z, H_pt, H_pt_theta, H_pz])
-
-# g_output = Reshape((1,6))(H)
 
 g_output = Concatenate()([charge_input, g_output])
 
@@ -404,8 +395,7 @@ for epoch in range(int(1E30)):
 
 			gen_loss_np, disc_loss_np, gen_loss_np_reco, gen_loss_np_GAN = train_step(images_for_batch, weight_of_reco_loss_i)
 
-			# if iteration < 25000:
-			loss_list = np.append(loss_list, [[iteration, gen_loss_np, disc_loss_np, gen_loss_np_reco, gen_loss_np_GAN]], axis=0)
+			# loss_list = np.append(loss_list, [[iteration, gen_loss_np, disc_loss_np, gen_loss_np_reco, gen_loss_np_GAN]], axis=0)
 
 			if iteration % save_interval == 0 and iteration > 0:
 
@@ -417,24 +407,24 @@ for epoch in range(int(1E30)):
 
 				print('Saving at iteration %d...'%iteration)
 
-				list_of_losses = ['Gen Loss', 'Dis Loss', 'D_aux r', 'D_aux z', 'D_aux Pt', 'D_aux Pz', 'Gen RECO', 'Gen GAN']
+				# list_of_losses = ['Gen Loss', 'Dis Loss', 'D_aux r', 'D_aux z', 'D_aux Pt', 'D_aux Pz', 'Gen RECO', 'Gen GAN']
 
-				plt.figure(figsize=(16, 8))
-				plt.subplot(2,3,1)
-				plt.plot(loss_list[:,0], loss_list[:,1])
-				plt.ylabel('Gen Loss')
-				plt.subplot(2,3,2)
-				plt.plot(loss_list[:,0], loss_list[:,2])
-				plt.ylabel('Disc Loss')
-				plt.subplot(2,3,4)
-				plt.plot(loss_list[:,0], loss_list[:,3])
-				plt.ylabel('Gen Loss Reco')
-				plt.subplot(2,3,5)
-				plt.plot(loss_list[:,0], loss_list[:,4])
-				plt.ylabel('Gen Loss GAN')
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/LOSSES.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
+				# plt.figure(figsize=(16, 8))
+				# plt.subplot(2,3,1)
+				# plt.plot(loss_list[:,0], loss_list[:,1])
+				# plt.ylabel('Gen Loss')
+				# plt.subplot(2,3,2)
+				# plt.plot(loss_list[:,0], loss_list[:,2])
+				# plt.ylabel('Disc Loss')
+				# plt.subplot(2,3,4)
+				# plt.plot(loss_list[:,0], loss_list[:,3])
+				# plt.ylabel('Gen Loss Reco')
+				# plt.subplot(2,3,5)
+				# plt.plot(loss_list[:,0], loss_list[:,4])
+				# plt.ylabel('Gen Loss GAN')
+				# plt.subplots_adjust(wspace=0.3, hspace=0.3)
+				# plt.savefig('%s%s/LOSSES.png'%(working_directory,saving_directory),bbox_inches='tight')
+				# plt.close('all')
 
 				noise_size = 100000
 				
@@ -555,7 +545,7 @@ for epoch in range(int(1E30)):
 						print('Saving best ROC_AUC.')
 						generator.save('%s%s/Generator_best_ROC_AUC.h5'%(working_directory,saving_directory))
 						discriminator.save('%s%s/Discriminator_best_ROC_AUC.h5'%(working_directory,saving_directory))
-						discriminator.save_weights('%s%s/Discriminator_best_ROC_AUC_weights.h5'%(working_directory,saving_directory))
+						# discriminator.save_weights('%s%s/Discriminator_best_ROC_AUC_weights.h5'%(working_directory,saving_directory))
 						best_ROC_AUC = ROC_AUC_SCORE_list[-1][1]
 						shutil.copy('%s%s/CORRELATIONS.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
 
