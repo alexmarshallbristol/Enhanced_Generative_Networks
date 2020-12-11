@@ -87,7 +87,7 @@ training_name = 'relu*.npy'
 testing_name = 'test_relu*.npy'
 saving_directory = 'Vanilla'
 save_interval = 25000
-
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
 calculate_ROC = True
 

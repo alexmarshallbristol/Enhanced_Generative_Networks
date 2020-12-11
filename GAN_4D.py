@@ -96,7 +96,7 @@ saving_directory = 'GAN_4D'
 save_interval = 25000
 weight_of_reco_kicks_in_at = 0
 weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
-
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 calculate_ROC = True

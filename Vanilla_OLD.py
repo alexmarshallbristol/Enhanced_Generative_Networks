@@ -62,27 +62,29 @@ def split_tensor(index, x):
 
 print(tf.__version__)
 
-working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
-training_directory = '/Users/am13743/Aux_GAN_thesis/TRAINING/DATA/'
-transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
-training_name = 'smear*.npy'
-saving_directory = 'Vanilla_OLD'
-save_interval = 15
-min_max_GAN_paper = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_GAN_paper.npy')
-min_max_smear = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_smear.npy')
-min_max_ptparam = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_ptparam.npy')
-
-
-# working_directory = 'TRAINING/'
-# training_directory = '/hdfs/user/am13743/THESIS/DATA/'
-# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-# pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+# working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
+# training_directory = '/Users/am13743/Aux_GAN_thesis/TRAINING/DATA/'
+# transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
 # training_name = 'smear*.npy'
 # saving_directory = 'Vanilla_OLD'
-# save_interval = 25000
-# min_max_GAN_paper = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_GAN_paper.npy')
-# min_max_smear = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_smear.npy')
-# min_max_ptparam = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_ptparam.npy')
+# save_interval = 15
+# min_max_GAN_paper = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_GAN_paper.npy')
+# min_max_smear = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_smear.npy')
+# min_max_ptparam = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_ptparam.npy')
+
+
+working_directory = 'TRAINING/'
+training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+training_name = 'smear*.npy'
+saving_directory = 'Vanilla_OLD'
+save_interval = 25000
+min_max_GAN_paper = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_GAN_paper.npy')
+min_max_smear = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_smear.npy')
+min_max_ptparam = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_ptparam.npy')
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
+
 
 
 def post_process_scaling(input_array, min_max):
