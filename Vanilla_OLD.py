@@ -278,6 +278,8 @@ for epoch in range(int(1E30)):
 
 			if iteration % 250 == 0: print('Iteration:',iteration)
 
+			if iteration > 50000 and iteration % 1000 == 0: batch_size += 1
+			
 			iteration += 1
 
 			gen_loss_np, disc_loss_np = train_step(images_for_batch)

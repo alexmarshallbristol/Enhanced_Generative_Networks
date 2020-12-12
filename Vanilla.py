@@ -78,7 +78,6 @@ print(tf.__version__)
 # saving_directory = 'Vanilla'
 # save_interval = 25000
 
-
 working_directory = 'TRAINING/'
 training_directory = '/hdfs/user/am13743/THESIS/DATA/'
 transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
@@ -135,37 +134,37 @@ H_pt_theta = Input(shape=(1,1))
 
 initial_state = Concatenate()([input_noise,charge_input,H_theta,H_pt_theta])
 
-H = Dense(int(G_architecture[0]),kernel_initializer=kernel_initializer_choice,bias_initializer=bias_initializer_choice)(initial_state)
+H = Dense(int(G_architecture[0]))(initial_state)
 H = LeakyReLU(alpha=0.2)(H)
 H = BatchNormalization(momentum=0.8)(H)
 
 for layer in G_architecture[1:]:
 
-	H = Dense(int(layer),kernel_initializer=kernel_initializer_choice,bias_initializer=bias_initializer_choice)(H)
+	H = Dense(int(layer))(H)
 	H = LeakyReLU(alpha=0.2)(H)
 	H = BatchNormalization(momentum=0.8)(H)
 
-H = Dense(6,kernel_initializer=kernel_initializer_choice,bias_initializer=bias_initializer_choice)(H)
+H = Dense(4,activation='tanh')(H)
 
-H = Reshape((1,6))(H)
+H = Reshape((1,4))(H)
 
 H_r = split_tensor(0, H)
-H_r = Activation('sigmoid')(H_r)
+# H_r = Activation('sigmoid')(H_r)
 H_r = Reshape((1,1))(H_r)
 
-H_z = split_tensor(2, H)
-H_z = Activation('tanh')(H_z)
-H_z = ReLU()(H_z)
+H_z = split_tensor(1, H)
+# H_z = Activation('tanh')(H_z)
+# H_z = ReLU()(H_z)
 H_z = Reshape((1,1))(H_z)
 
-H_pt = split_tensor(3, H)
-H_pt = Activation('tanh')(H_pt)
-H_pt = ReLU()(H_pt)
+H_pt = split_tensor(2, H)
+# H_pt = Activation('tanh')(H_pt)
+# H_pt = ReLU()(H_pt)
 H_pt = Reshape((1,1))(H_pt)
 
-H_pz = split_tensor(5, H)
-H_pz = Activation('tanh')(H_pz)
-H_pz = ReLU()(H_pz)
+H_pz = split_tensor(3, H)
+# H_pz = Activation('tanh')(H_pz)
+# H_pz = ReLU()(H_pz)
 H_pz = Reshape((1,1))(H_pz)
 
 g_output = Concatenate(axis=-1)([H_r, H_theta, H_z, H_pt, H_pt_theta, H_pz])
@@ -182,7 +181,7 @@ d_input = Input(shape=(1,7))
 H = Flatten()(d_input)
 
 for layer in D_architecture:
-	H = Dense(int(layer),kernel_initializer=kernel_initializer_choice,bias_initializer=bias_initializer_choice)(H)
+	H = Dense(int(layer))(H)
 	H = LeakyReLU(alpha=0.2)(H)
 	H = Dropout(0.2)(H)
 
@@ -201,8 +200,8 @@ def train_step(images):
 
 	noise = tf.random.normal([batch_size, 1, 100])
 	charge_gan = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
-	theta_gan = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
-	theta_pt_gan = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
+	theta_gan = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
+	theta_pt_gan = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
 
 	generated_images = generator([noise, charge_gan, theta_gan, theta_pt_gan])
 
@@ -220,8 +219,8 @@ def train_step(images):
 	noise_stacked = tf.random.normal((batch_size, 1, 100), 0, 1)
 	charge_stacked = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
 	labels_stacked = tf.ones((batch_size, 1))
-	theta_stacked = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
-	theta_pt_stacked = tf.random.uniform([batch_size, 1, 1])*0.97+0.015
+	theta_stacked = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
+	theta_pt_stacked = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
 
 	with tf.GradientTape() as gen_tape:
 
@@ -267,6 +266,8 @@ for epoch in range(int(1E30)):
 
 		X_train = np.take(X_train,np.random.permutation(X_train.shape[0]),axis=0,out=X_train)
 
+		X_train[:,1:7] = (X_train[:,1:7] * 2.) - 1.
+
 		print('Train images shape -',np.shape(X_train))
 
 		list_for_np_choice = np.arange(np.shape(X_train)[0])
@@ -280,6 +281,8 @@ for epoch in range(int(1E30)):
 		for images_for_batch in train_dataset:
 
 			if iteration % 250 == 0: print('Iteration:',iteration)
+
+			if iteration > 50000 and iteration % 1000 == 0: batch_size += 1
 
 			iteration += 1
 
@@ -323,8 +326,8 @@ for epoch in range(int(1E30)):
 					
 				charge_gan = np.random.choice([-1,1],size=(noise_size,1,1),p=[1-0.5,0.5],replace=True)
 				gen_noise = np.random.normal(0, 1, (int(noise_size), 100))
-				theta_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*0.97+0.015
-				theta_pt_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*0.97+0.015
+				theta_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*1.94-1.+0.03
+				theta_pt_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*1.94-1.+0.03
 				images = np.squeeze(generator.predict([np.expand_dims(gen_noise,1), charge_gan, theta_gan, theta_pt_gan]))
 				# Remove pdg info
 				images = images[:,1:]
@@ -337,7 +340,7 @@ for epoch in range(int(1E30)):
 					subplot += 1
 					plt.subplot(2,3,subplot)
 					if subplot == 2: plt.title(iteration)
-					plt.hist([samples[:noise_size,i], images[:noise_size,i]], bins=50,range=[0,1], label=['Train','GEN'],histtype='step')
+					plt.hist([samples[:noise_size,i], images[:noise_size,i]], bins=50,range=[-1,1], label=['Train','GEN'],histtype='step')
 					plt.yscale('log')
 					plt.xlabel(axis_titles_train[i])
 					if axis_titles_train[i] == 'z': plt.legend()
@@ -352,11 +355,10 @@ for epoch in range(int(1E30)):
 						subplot += 1
 						plt.subplot(3,5,subplot)
 						if subplot == 3: plt.title(iteration)
-						plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[0,1],[0,1]], norm=LogNorm(), cmap=cmp_root)
+						plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
 						plt.xlabel(axis_titles_train[i])
 						plt.ylabel(axis_titles_train[j])
 				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
 				plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
 				plt.close('all')
 

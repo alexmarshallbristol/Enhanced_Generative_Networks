@@ -67,7 +67,8 @@ Seed_enhanced_generation = np.load('Seed_enhanced_generation.npy')
 
 min_max_ptparam = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_ptparam.npy')
 
-generator = load_model('/Users/am13743/generator.h5')
+# generator = load_model('/Users/am13743/generator.h5')
+generator = load_model('/Users/am13743/Generator_best_ROC_AUC.h5')
 
 
 def pre_process_scaling(input_array, min_max):
@@ -112,7 +113,7 @@ def ptparam_to_pxpy(input_array):
 	input_array = np.concatenate((x,y,z,px,py,pz),axis=1)
 	return input_array
 
-inital_plots = False
+inital_plots = True
 
 if inital_plots == True:
 	plt.figure(figsize=(5*4, 3*4))
@@ -185,7 +186,8 @@ Seed_enhanced_generation[:,1:7] = pre_process_scaling(Seed_enhanced_generation[:
 
 batch_size = 50
 
-B_architecture = [100,200,100]
+# B_architecture = [100,200,100]
+B_architecture = [28,28]
 
 save_interval = 25000
 

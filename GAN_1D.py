@@ -67,32 +67,44 @@ print(tf.__version__)
 # training_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/DATA/'
 # transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
 # pre_trained_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/PRE_TRAIN/'
-# training_name = 'data*.npy'
-# testing_name = 'test*.npy'
+# training_name = 'relu*.npy'
+# testing_name = 'test_relu*.npy'
 # saving_directory = 'GAN_1D'
-# save_interval = 500
-# weight_of_reco_kicks_in_at = 100
-# weight_of_reco_maxes_at = 110 # if weight_of_reco_maxes_at > 0:
+# save_interval = 5000
+# weight_of_reco_kicks_in_at = 0
+# weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
 
-working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
+# training_name = 'relu*.npy'
+# testing_name = 'test_relu*.npy'
+# saving_directory = 'GAN_1D'
+# save_interval = 25000
+# weight_of_reco_kicks_in_at = 0
+# weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
+
+
+working_directory = 'TRAINING/'
+training_directory = '/hdfs/user/am13743/THESIS/DATA/'
 transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
-training_name = 'data*.npy'
-testing_name = 'test*.npy'
-saving_directory = 'GAN_1D'
+pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+training_name = 'relu*.npy'
+testing_name = 'test_relu*.npy'
+saving_directory = 'GAN_1D_tanh'
 save_interval = 25000
 weight_of_reco_kicks_in_at = 0
 weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
-
+os.environ["CUDA_VISIBLE_DEVICES"]="4"
 
 calculate_ROC = True
+test_boosting = False
 
 batch_size = 50
 
-G_architecture = [1000,1000]
-D_architecture = [1000,1000]
-
+G_architecture = [1000,1000,250,50]
+D_architecture = [1000,1000,250,50]
 
 # aux_name = 'pt'
 # index_of_aux_column = 9
@@ -109,35 +121,14 @@ D_architecture_aux = [64, 128]
 weight_of_vanilla_loss = 10.
 weight_of_reco_loss = 1.
 
-
-trans_1 = load(open('%strans_1.pkl'%transformer_directory, 'rb'))
-trans_2 = load(open('%strans_2.pkl'%transformer_directory, 'rb'))
-trans_3 = load(open('%strans_3.pkl'%transformer_directory, 'rb'))
-trans_4 = load(open('%strans_4.pkl'%transformer_directory, 'rb'))
-trans_5 = load(open('%strans_5.pkl'%transformer_directory, 'rb'))
-trans_6 = load(open('%strans_6.pkl'%transformer_directory, 'rb'))
-
-def post_process(input_array):
-	output_array = np.empty(np.shape(input_array))
-	output_array[:,0] = np.squeeze(trans_1.inverse_transform(np.expand_dims(input_array[:,0],1)*7.))
-	output_array[:,1] = np.squeeze(trans_2.inverse_transform(np.expand_dims(input_array[:,1],1)*7.))
-	output_array[:,2] = np.squeeze(trans_3.inverse_transform(np.expand_dims(input_array[:,2],1)*7.))
-	output_array[:,3] = np.squeeze(trans_4.inverse_transform(np.expand_dims(input_array[:,3],1)*7.))
-	output_array[:,4] = np.squeeze(trans_5.inverse_transform(np.expand_dims(input_array[:,4],1)*7.))
-	output_array[:,5] = np.squeeze(trans_6.inverse_transform(np.expand_dims(input_array[:,5],1)*7.))
-	output_array = ((output_array - 0.1) * 2.4) - 1.
-	for i in range(0, 6): # Transformers do not work well with extreme values, not an issue once the network is trained a little, but want to get ROC values for young network
-		output_array[np.where(np.isnan(output_array[:,i])==True)] = np.sign(input_array[np.where(np.isnan(output_array[:,i])==True)])
-	return output_array
-
 list_of_training_files = glob.glob('%s%s'%(training_directory,training_name))
 
-try:
-	files_to_remove = glob.glob('%s%s/CORRELATIONS/Correlations_*.png'%(working_directory,saving_directory))
-	for file_i in files_to_remove:
-		os.remove(file_i)
-except:
-	print('/CORRELATIONS/ already clean')
+# try:
+# 	files_to_remove = glob.glob('%s%s/CORRELATIONS/Correlations_*.png'%(working_directory,saving_directory))
+# 	for file_i in files_to_remove:
+# 		os.remove(file_i)
+# except:
+# 	print('/CORRELATIONS/ already clean')
 try:
 	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
 	for file_i in files_to_remove:
@@ -161,13 +152,18 @@ gen_optimizer = tf.keras.optimizers.Adam(lr=0.0004, beta_1=0.5, decay=0, amsgrad
 disc_optimizer = tf.keras.optimizers.Adam(lr=0.0004, beta_1=0.5, decay=0, amsgrad=True)
 disc_pt_optimizer = tf.keras.optimizers.Adam(lr=0.0001)
 
+kernel_initializer_choice='random_uniform'
+bias_initializer_choice='random_uniform'
+
 ##############################################################################################################
 # Build Generative model ...
 input_noise = Input(shape=(1,100))
 auxiliary_inputs = Input(shape=(1,1))
 charge_input = Input(shape=(1,1))
+H_theta = Input(shape=(1,1))
+H_pt_theta = Input(shape=(1,1))
 
-initial_state = Concatenate()([input_noise,auxiliary_inputs,charge_input])
+initial_state = Concatenate()([input_noise,auxiliary_inputs,charge_input,H_theta,H_pt_theta])
 
 H = Dense(int(G_architecture[0]))(initial_state)
 H = LeakyReLU(alpha=0.2)(H)
@@ -179,12 +175,34 @@ for layer in G_architecture[1:]:
 	H = LeakyReLU(alpha=0.2)(H)
 	H = BatchNormalization(momentum=0.8)(H)
 
-H = Dense(6, activation='tanh')(H)
-g_output = Reshape((1,6))(H)
+H = Dense(4,activation='tanh')(H)
+
+H = Reshape((1,4))(H)
+
+H_r = split_tensor(0, H)
+# H_r = Activation('sigmoid')(H_r)
+H_r = Reshape((1,1))(H_r)
+
+H_z = split_tensor(1, H)
+# H_z = Activation('tanh')(H_z)
+# H_z = ReLU()(H_z)
+H_z = Reshape((1,1))(H_z)
+
+H_pt = split_tensor(2, H)
+# H_pt = Activation('tanh')(H_pt)
+# H_pt = ReLU()(H_pt)
+H_pt = Reshape((1,1))(H_pt)
+
+H_pz = split_tensor(3, H)
+# H_pz = Activation('tanh')(H_pz)
+# H_pz = ReLU()(H_pz)
+H_pz = Reshape((1,1))(H_pz)
+
+g_output = Concatenate(axis=-1)([H_r, H_theta, H_z, H_pt, H_pt_theta, H_pz])
 
 g_output = Concatenate()([charge_input, g_output])
 
-generator = Model(inputs=[input_noise,auxiliary_inputs,charge_input], outputs=[g_output])
+generator = Model(inputs=[input_noise,auxiliary_inputs,charge_input,H_theta,H_pt_theta], outputs=[g_output])
 ##############################################################################################################
 
 ##############################################################################################################
@@ -222,7 +240,6 @@ d_input = Input(shape=(1,7))
 H = Flatten()(d_input)
 
 for layer in D_architecture:
-
 	H = Dense(int(layer))(H)
 	H = LeakyReLU(alpha=0.2)(H)
 	H = Dropout(0.2)(H)
@@ -240,8 +257,10 @@ def train_step(images, weight_of_reco_loss_inner):
 	noise = tf.random.normal([batch_size, 1, 100])
 	aux = tf.math.abs(tf.random.normal([batch_size, 1, 1]))
 	charge_gan = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
+	theta_gan = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
+	theta_pt_gan = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
 
-	generated_images = generator([noise, aux, charge_gan])
+	generated_images = generator([noise, aux, charge_gan, theta_gan, theta_pt_gan])
 
 	in_values = tf.concat([generated_images, images],0)
 	labels_D_0 = tf.zeros((batch_size, 1)) 
@@ -256,9 +275,11 @@ def train_step(images, weight_of_reco_loss_inner):
 	aux_stacked = tf.math.abs(tf.random.normal([batch_size, 1, 1]))
 	charge_stacked = tf.math.sign(tf.random.normal([batch_size, 1, 1]))
 	labels_stacked = tf.ones((batch_size, 1))
+	theta_stacked = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
+	theta_pt_stacked = tf.random.uniform([batch_size, 1, 1])*1.94-1.+0.03
 
 	with tf.GradientTape(persistent=True) as gen_tape:
-		fake_images2 = generator([noise_stacked, aux_stacked, charge_stacked], training=True)
+		fake_images2 = generator([noise_stacked, aux_stacked, charge_stacked, theta_stacked, theta_pt_stacked], training=True)
 		stacked_output_choice = discriminator(fake_images2)
 		stacked_output_reco = discriminator_aux_pt(fake_images2)
 		gen_loss_GAN = _loss_generator(tf.squeeze(labels_stacked),tf.squeeze(stacked_output_choice))
@@ -300,6 +321,8 @@ for epoch in range(int(1E30)):
 
 		X_train = np.take(X_train,np.random.permutation(X_train.shape[0]),axis=0,out=X_train)
 
+		X_train[:,1:7] = (X_train[:,1:7] * 2.) - 1.
+
 		print('Train images shape -',np.shape(X_train))
 
 		list_for_np_choice = np.arange(np.shape(X_train)[0])
@@ -314,6 +337,8 @@ for epoch in range(int(1E30)):
 
 			if iteration % 250 == 0: print('Iteration:',iteration)
 
+			if iteration > 50000 and iteration % 1000 == 0: batch_size += 1
+			
 			iteration += 1
 
 			if weight_of_reco_maxes_at > 0:
@@ -367,7 +392,9 @@ for epoch in range(int(1E30)):
 				charge_gan = np.random.choice([-1,1],size=(noise_size,1,1),p=[1-0.5,0.5],replace=True)
 				aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,1)))
 				gen_noise = np.random.normal(0, 1, (int(noise_size), 100))
-				images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan])
+				theta_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*1.94-1.+0.03
+				theta_pt_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*1.94-1.+0.03
+				images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan, theta_gan, theta_pt_gan])
 
 				images = np.squeeze(images)
 
@@ -386,24 +413,7 @@ for epoch in range(int(1E30)):
 						plt.xlabel(axis_titles[i])
 						plt.ylabel(axis_titles[j])
 				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORRELATIONS_qt_boxcox.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-				images = post_process(images)				
-				samples = post_process(samples)
-
-				plt.figure(figsize=(5*4, 3*4))
-				subplot=0
-				for i in range(0, 6):
-					for j in range(i+1, 6):
-						subplot += 1
-						plt.subplot(3,5,subplot)
-						if subplot == 3: plt.title(iteration)
-						plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-						plt.xlabel(axis_titles[i])
-						plt.ylabel(axis_titles[j])
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
+				# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
 				plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
 				plt.close('all')
 
@@ -421,26 +431,27 @@ for epoch in range(int(1E30)):
 				plt.savefig('%s%s/VALUES.png'%(working_directory,saving_directory),bbox_inches='tight')
 				plt.close('all')
 
-				aux_gan = aux_gan*2.5
-				images_wide = np.squeeze(generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan]))
+				if test_boosting == True:
 
-				images_wide = images_wide[:,1:]
-				images_wide = post_process(images_wide)	
-				#######
-				plt.figure(figsize=(5*4, 3*4))
-				subplot=0
-				for i in range(0, 6):
-					for j in range(i+1, 6):
-						subplot += 1
-						plt.subplot(3,5,subplot)
-						if subplot == 3: plt.title(iteration)
-						plt.hist2d(images_wide[:noise_size,i], images_wide[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-						plt.xlabel(axis_titles[i])
-						plt.ylabel(axis_titles[j])
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/CORRELATIONS_2_5.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.savefig('%s%s/CORRELATIONS/Correlations_2_5_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
-				plt.close('all')
+					aux_gan = aux_gan*2.
+					images_wide = np.squeeze(generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan]))
+
+					images_wide = images_wide[:,1:]
+					#######
+					plt.figure(figsize=(5*4, 3*4))
+					subplot=0
+					for i in range(0, 6):
+						for j in range(i+1, 6):
+							subplot += 1
+							plt.subplot(3,5,subplot)
+							if subplot == 3: plt.title(iteration)
+							plt.hist2d(images_wide[:noise_size,i], images_wide[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+							plt.xlabel(axis_titles[i])
+							plt.ylabel(axis_titles[j])
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					plt.savefig('%s%s/CORRELATIONS_2_5.png'%(working_directory,saving_directory),bbox_inches='tight')
+					# plt.savefig('%s%s/CORRELATIONS/Correlations_2_5_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
+					plt.close('all')
 
 				if iteration > 0 and calculate_ROC == True:
 
@@ -495,7 +506,7 @@ for epoch in range(int(1E30)):
 						print('Saving best ROC_AUC.')
 						generator.save('%s%s/Generator_best_ROC_AUC.h5'%(working_directory,saving_directory))
 						discriminator.save('%s%s/Discriminator_best_ROC_AUC.h5'%(working_directory,saving_directory))
-						discriminator.save_weights('%s%s/Discriminator_best_ROC_AUC_weights.h5'%(working_directory,saving_directory))
+						# discriminator.save_weights('%s%s/Discriminator_best_ROC_AUC_weights.h5'%(working_directory,saving_directory))
 						best_ROC_AUC = ROC_AUC_SCORE_list[-1][1]
 						shutil.copy('%s%s/CORRELATIONS.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
 
