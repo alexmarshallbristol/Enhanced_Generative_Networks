@@ -193,6 +193,8 @@ for epoch in range(int(1E30)):
 
 		X_train = np.take(X_train,np.random.permutation(X_train.shape[0]),axis=0,out=X_train)
 
+		X_train[:,1:7] = (X_train[:,1:7] * 2.) - 1.
+		
 		print('Train images shape -',np.shape(X_train))
 
 		list_for_np_choice = np.arange(np.shape(X_train)[0])

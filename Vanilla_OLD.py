@@ -131,6 +131,7 @@ def pre_process_scaling(input_array, min_max):
 calculate_ROC = True
 
 batch_size = 50
+virtual_batch_size = 50
 
 G_architecture = [1000,1000,250,50]
 D_architecture = [1000,1000,250,50]
@@ -270,6 +271,8 @@ for epoch in range(int(1E30)):
 
 	for file in list_of_training_files:
 
+		batch_size = virtual_batch_size
+
 		print('Loading initial training file:',file,'...')
 
 		X_train = np.load(file)
@@ -290,7 +293,7 @@ for epoch in range(int(1E30)):
 
 			if iteration % 250 == 0: print('Iteration:',iteration)
 
-			if iteration > 50000 and iteration % 1000 == 0: batch_size += 1
+			if iteration > 50000 and iteration % 1000 == 0: virtual_batch_size += 1
 
 			iteration += 1
 
