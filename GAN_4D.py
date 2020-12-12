@@ -74,29 +74,28 @@ print(tf.__version__)
 # weight_of_reco_kicks_in_at = 0
 # weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
 
-# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
-# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-# pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
-# training_name = 'relu*.npy'
-# testing_name = 'test_relu*.npy'
-# saving_directory = 'GAN_4D'
-# save_interval = 25000
-# weight_of_reco_kicks_in_at = 0
-# weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
-
-
-working_directory = 'TRAINING/'
-training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
 transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+pre_trained_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/PRE_TRAIN/'
 training_name = 'relu*.npy'
 testing_name = 'test_relu*.npy'
 saving_directory = 'GAN_4D'
 save_interval = 25000
 weight_of_reco_kicks_in_at = 0
 weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
+# working_directory = 'TRAINING/'
+# training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+# training_name = 'relu*.npy'
+# testing_name = 'test_relu*.npy'
+# saving_directory = 'GAN_4D'
+# save_interval = 25000
+# weight_of_reco_kicks_in_at = 0
+# weight_of_reco_maxes_at = 0 # if weight_of_reco_maxes_at > 0:
+# os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 calculate_ROC = True

@@ -70,23 +70,23 @@ print(tf.__version__)
 # saving_directory = 'Vanilla'
 # save_interval = 500
 
-# working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
-# training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
-# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-# training_name = 'data*.npy'
-# testing_name = 'test*.npy'
-# saving_directory = 'Vanilla'
-# save_interval = 25000
-
-working_directory = 'TRAINING/'
-training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/DATA/'
 transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
 training_name = 'relu*.npy'
 testing_name = 'test_relu*.npy'
 saving_directory = 'Vanilla'
 save_interval = 25000
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+
+# working_directory = 'TRAINING/'
+# training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+# training_name = 'relu*.npy'
+# testing_name = 'test_relu*.npy'
+# saving_directory = 'Vanilla'
+# save_interval = 25000
+# os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
 calculate_ROC = True
 

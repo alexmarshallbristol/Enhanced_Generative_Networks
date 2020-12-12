@@ -73,17 +73,29 @@ print(tf.__version__)
 # min_max_ptparam = np.load('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/MIN_MAXES/min_max_ptparam.npy')
 
 
-working_directory = 'TRAINING/'
-training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+working_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRAINING/'
+training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/DATA/'
 transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
-pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
 training_name = 'smear*.npy'
+testing_name = 'smear*.npy'
 saving_directory = 'Vanilla_OLD'
 save_interval = 25000
-min_max_GAN_paper = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_GAN_paper.npy')
-min_max_smear = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_smear.npy')
-min_max_ptparam = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_ptparam.npy')
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+min_max_GAN_paper = np.load('/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/MIN_MAXES/min_max_GAN_paper.npy')
+min_max_smear = np.load('/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/MIN_MAXES/min_max_smear.npy')
+min_max_ptparam = np.load('/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/MIN_MAXES/min_max_ptparam.npy')
+
+
+# working_directory = 'TRAINING/'
+# training_directory = '/hdfs/user/am13743/THESIS/DATA/'
+# transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
+# pre_trained_directory = '/hdfs/user/am13743/THESIS/PRE_TRAIN/'
+# training_name = 'smear*.npy'
+# saving_directory = 'Vanilla_OLD'
+# save_interval = 25000
+# min_max_GAN_paper = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_GAN_paper.npy')
+# min_max_smear = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_smear.npy')
+# min_max_ptparam = np.load('/hdfs/user/am13743/THESIS/MIN_MAXES/min_max_ptparam.npy')
+# os.environ["CUDA_VISIBLE_DEVICES"]="3"
 
 
 
@@ -279,7 +291,7 @@ for epoch in range(int(1E30)):
 			if iteration % 250 == 0: print('Iteration:',iteration)
 
 			if iteration > 50000 and iteration % 1000 == 0: batch_size += 1
-			
+
 			iteration += 1
 
 			gen_loss_np, disc_loss_np = train_step(images_for_batch)
@@ -381,6 +393,20 @@ for epoch in range(int(1E30)):
 						images = pxpy_to_ptparam(images)
 						images = pre_process_scaling(images,min_max_ptparam)
 						images = (images + 1.)/2.
+
+						plt.figure(figsize=(5*4, 3*4))
+						subplot=0
+						for i in range(0, 6):
+							for j in range(i+1, 6):
+								subplot += 1
+								plt.subplot(3,5,subplot)
+								if subplot == 3: plt.title(iteration)
+								plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+								plt.xlabel(axis_titles_train[i])
+								plt.ylabel(axis_titles_train[j])
+						plt.subplots_adjust(wspace=0.3, hspace=0.3)
+						plt.savefig('%s%s/BDT_data_example.png'%(working_directory,saving_directory),bbox_inches='tight')
+						plt.close('all')
 
 						bdt_train_size = int(np.shape(images)[0]/2)
 
