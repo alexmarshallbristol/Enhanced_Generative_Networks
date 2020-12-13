@@ -23,6 +23,7 @@ import glob
 import time
 import shutil
 import os
+import random
 
 from pickle import load
 from sklearn.preprocessing import QuantileTransformer
@@ -62,6 +63,9 @@ def split_tensor(index, x):
 
 print(tf.__version__)
 
+# mode = "long test"
+mode = "ROC_testing"
+
 # working_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRAINING/'
 # training_directory = '/Users/am13743/Aux_GAN_thesis/TRAINING/DATA/'
 # transformer_directory = '/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/TRANSFORMERS/'
@@ -78,7 +82,7 @@ training_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/DATA/'
 transformer_directory = '/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/TRANSFORMERS/'
 training_name = 'smear*.npy'
 testing_name = 'smear*.npy'
-saving_directory = 'Vanilla_OLD'
+saving_directory = 'Vanilla_OLD_ROC'
 save_interval = 25000
 min_max_GAN_paper = np.load('/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/MIN_MAXES/min_max_GAN_paper.npy')
 min_max_smear = np.load('/mnt/storage/scratch/am13743/AUX_GAN_THESIS/THESIS_ITERATION/MIN_MAXES/min_max_smear.npy')
@@ -133,6 +137,12 @@ calculate_ROC = True
 batch_size = 50
 virtual_batch_size = 50
 
+FoM_ID = np.random.randint(1000000,9999999)
+if mode == "ROC_testing":
+	calculate_ROC = True
+	save_interval = 5000
+	quit_at_iteration = 70002
+
 G_architecture = [1000,1000,250,50]
 D_architecture = [1000,1000,250,50]
 
@@ -145,18 +155,19 @@ list_of_training_files = glob.glob('%s%s'%(training_directory,training_name))
 # 		os.remove(file_i)
 # except:
 # 	print('/CORRELATIONS/ already clean')
-# try:
-# 	files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
-# 	for file_i in files_to_remove:
-# 		os.remove(file_i)
-# 	files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
-# 	for file_i in files_to_remove:
-# 		os.remove(file_i)
-# 	files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
-# 	for file_i in files_to_remove:
-# 		os.remove(file_i)
-# except:
-# 	print('Output directory already clean')
+if mode != "ROC_testing":
+	try:
+		files_to_remove = glob.glob('%s%s/*.png'%(working_directory,saving_directory))
+		for file_i in files_to_remove:
+			os.remove(file_i)
+		files_to_remove = glob.glob('%s%s/*.h5'%(working_directory,saving_directory))
+		for file_i in files_to_remove:
+			os.remove(file_i)
+		files_to_remove = glob.glob('%s%s/*.npy'%(working_directory,saving_directory))
+		for file_i in files_to_remove:
+			os.remove(file_i)
+	except:
+		print('Output directory already clean')
 
 
 print(' ')
@@ -266,6 +277,7 @@ best_ROC_AUC = 1
 training_time = 0
 
 t0 = time.time()
+random.shuffle(list_of_training_files)
 
 for epoch in range(int(1E30)):
 
@@ -297,9 +309,14 @@ for epoch in range(int(1E30)):
 
 			iteration += 1
 
+			if mode == "ROC_testing":
+				if iteration == quit_at_iteration:
+					quit()
+
 			gen_loss_np, disc_loss_np = train_step(images_for_batch)
 
-			loss_list = np.append(loss_list, [[iteration, gen_loss_np, disc_loss_np]], axis=0)
+			if mode != "ROC_testing":
+				loss_list = np.append(loss_list, [[iteration, gen_loss_np, disc_loss_np]], axis=0)
 
 			if iteration % save_interval == 0:
 
@@ -311,25 +328,26 @@ for epoch in range(int(1E30)):
 
 				print('Saving at iteration %d...'%iteration)
 
-				if iteration < 25000:
-					plt.figure(figsize=(8, 8))
-					plt.subplot(2,2,1)
-					plt.plot(loss_list[:,0], loss_list[:,1])
-					plt.ylabel('Gen Loss')
-					plt.subplot(2,2,2)
-					plt.plot(loss_list[:,0], loss_list[:,2])
-					plt.ylabel('Disc Loss')
-					plt.subplot(2,2,3)
-					plt.plot(loss_list[:,0], loss_list[:,1])
-					plt.ylabel('Gen Loss')
-					plt.yscale('log')
-					plt.subplot(2,2,4)
-					plt.plot(loss_list[:,0], loss_list[:,2])
-					plt.ylabel('Disc Loss')
-					plt.yscale('log')
-					plt.subplots_adjust(wspace=0.3, hspace=0.3)
-					plt.savefig('%s%s/LOSSES.png'%(working_directory,saving_directory),bbox_inches='tight')
-					plt.close('all')
+				if mode != "ROC_testing":
+					if iteration < 25000:
+						plt.figure(figsize=(8, 8))
+						plt.subplot(2,2,1)
+						plt.plot(loss_list[:,0], loss_list[:,1])
+						plt.ylabel('Gen Loss')
+						plt.subplot(2,2,2)
+						plt.plot(loss_list[:,0], loss_list[:,2])
+						plt.ylabel('Disc Loss')
+						plt.subplot(2,2,3)
+						plt.plot(loss_list[:,0], loss_list[:,1])
+						plt.ylabel('Gen Loss')
+						plt.yscale('log')
+						plt.subplot(2,2,4)
+						plt.plot(loss_list[:,0], loss_list[:,2])
+						plt.ylabel('Disc Loss')
+						plt.yscale('log')
+						plt.subplots_adjust(wspace=0.3, hspace=0.3)
+						plt.savefig('%s%s/LOSSES.png'%(working_directory,saving_directory),bbox_inches='tight')
+						plt.close('all')
 
 				noise_size = 100000
 		
@@ -343,42 +361,44 @@ for epoch in range(int(1E30)):
 
 				samples = X_train[:,0,1:-5].copy()
 
-				plt.figure(figsize=(3*4, 2*4))
-				subplot=0
-				for i in range(0, 6):
-					subplot += 1
-					plt.subplot(2,3,subplot)
-					if subplot == 2: plt.title(iteration)
-					plt.hist([samples[:noise_size,i], images[:noise_size,i]], bins=50,range=[-1,1], label=['Train','GEN'],histtype='step')
-					plt.yscale('log')
-					plt.xlabel(axis_titles_train[i])
-					if axis_titles_train[i] == 'z': plt.legend()
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				plt.savefig('%s%s/VALUES.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
-
-				plt.figure(figsize=(5*4, 3*4))
-				subplot=0
-				for i in range(0, 6):
-					for j in range(i+1, 6):
+				if mode != "ROC_testing":
+					plt.figure(figsize=(3*4, 2*4))
+					subplot=0
+					for i in range(0, 6):
 						subplot += 1
-						plt.subplot(3,5,subplot)
-						if subplot == 3: plt.title(iteration)
-						plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+						plt.subplot(2,3,subplot)
+						if subplot == 2: plt.title(iteration)
+						plt.hist([samples[:noise_size,i], images[:noise_size,i]], bins=50,range=[-1,1], label=['Train','GEN'],histtype='step')
+						plt.yscale('log')
 						plt.xlabel(axis_titles_train[i])
-						plt.ylabel(axis_titles_train[j])
-				plt.subplots_adjust(wspace=0.3, hspace=0.3)
-				# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
-				plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
-				plt.close('all')
+						if axis_titles_train[i] == 'z': plt.legend()
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					plt.savefig('%s%s/VALUES.png'%(working_directory,saving_directory),bbox_inches='tight')
+					plt.close('all')
+
+					plt.figure(figsize=(5*4, 3*4))
+					subplot=0
+					for i in range(0, 6):
+						for j in range(i+1, 6):
+							subplot += 1
+							plt.subplot(3,5,subplot)
+							if subplot == 3: plt.title(iteration)
+							plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+							plt.xlabel(axis_titles_train[i])
+							plt.ylabel(axis_titles_train[j])
+					plt.subplots_adjust(wspace=0.3, hspace=0.3)
+					# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
+					plt.savefig('%s%s/CORRELATIONS.png'%(working_directory,saving_directory),bbox_inches='tight')
+					plt.close('all')
 
 
 				if iteration > 0 and calculate_ROC == True:
 
 					try:
-						generator.save('%s%s/generator.h5'%(working_directory,saving_directory))
-						discriminator.save('%s%s/discriminator.h5'%(working_directory,saving_directory))
-						discriminator.save_weights('%s%s/discriminator_weights.h5'%(working_directory,saving_directory))
+						if mode != "ROC_testing":
+							generator.save('%s%s/generator.h5'%(working_directory,saving_directory))
+							discriminator.save('%s%s/discriminator.h5'%(working_directory,saving_directory))
+							discriminator.save_weights('%s%s/discriminator_weights.h5'%(working_directory,saving_directory))
 
 						###################################################
 
@@ -397,19 +417,20 @@ for epoch in range(int(1E30)):
 						images = pre_process_scaling(images,min_max_ptparam)
 						images = (images + 1.)/2.
 
-						plt.figure(figsize=(5*4, 3*4))
-						subplot=0
-						for i in range(0, 6):
-							for j in range(i+1, 6):
-								subplot += 1
-								plt.subplot(3,5,subplot)
-								if subplot == 3: plt.title(iteration)
-								plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
-								plt.xlabel(axis_titles_train[i])
-								plt.ylabel(axis_titles_train[j])
-						plt.subplots_adjust(wspace=0.3, hspace=0.3)
-						plt.savefig('%s%s/BDT_data_example.png'%(working_directory,saving_directory),bbox_inches='tight')
-						plt.close('all')
+						if mode != "ROC_testing":
+							plt.figure(figsize=(5*4, 3*4))
+							subplot=0
+							for i in range(0, 6):
+								for j in range(i+1, 6):
+									subplot += 1
+									plt.subplot(3,5,subplot)
+									if subplot == 3: plt.title(iteration)
+									plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
+									plt.xlabel(axis_titles_train[i])
+									plt.ylabel(axis_titles_train[j])
+							plt.subplots_adjust(wspace=0.3, hspace=0.3)
+							plt.savefig('%s%s/BDT_data_example.png'%(working_directory,saving_directory),bbox_inches='tight')
+							plt.close('all')
 
 						bdt_train_size = int(np.shape(images)[0]/2)
 
@@ -435,12 +456,13 @@ for epoch in range(int(1E30)):
 
 						out_fake = clf.predict_proba(fake_test_data)
 
-						plt.hist([out_real[:,1],out_fake[:,1]], bins = 100,label=['real','gen'], histtype='step')
-						plt.xlabel('Output of BDT')
-						plt.legend(loc='upper right')
-						# plt.savefig('%s%s/bdt/BDT_P_out_%d.png'%(working_directory,saving_directory,cnt), bbox_inches='tight')
-						plt.savefig('%s%s/BDT_out.png'%(working_directory,saving_directory), bbox_inches='tight')
-						plt.close('all')
+						if mode != "ROC_testing":
+							plt.hist([out_real[:,1],out_fake[:,1]], bins = 100,label=['real','gen'], histtype='step')
+							plt.xlabel('Output of BDT')
+							plt.legend(loc='upper right')
+							# plt.savefig('%s%s/bdt/BDT_P_out_%d.png'%(working_directory,saving_directory,cnt), bbox_inches='tight')
+							plt.savefig('%s%s/BDT_out.png'%(working_directory,saving_directory), bbox_inches='tight')
+							plt.close('all')
 
 						ROC_AUC_SCORE_curr = roc_auc_score(np.append(np.ones(np.shape(out_real[:,1])),np.zeros(np.shape(out_fake[:,1]))),np.append(out_real[:,1],out_fake[:,1]))
 
@@ -449,21 +471,23 @@ for epoch in range(int(1E30)):
 
 						if ROC_AUC_SCORE_list[-1][1] < best_ROC_AUC:
 							print('Saving best ROC_AUC.')
-							generator.save('%s%s/Generator_best_ROC_AUC.h5'%(working_directory,saving_directory))
-							discriminator.save('%s%s/Discriminator_best_ROC_AUC.h5'%(working_directory,saving_directory))
-							discriminator.save_weights('%s%s/Discriminator_best_ROC_AUC_weights.h5'%(working_directory,saving_directory))
+							if mode != "ROC_testing":
+								generator.save('%s%s/Generator_best_ROC_AUC.h5'%(working_directory,saving_directory))
+								discriminator.save('%s%s/Discriminator_best_ROC_AUC.h5'%(working_directory,saving_directory))
+								discriminator.save_weights('%s%s/Discriminator_best_ROC_AUC_weights.h5'%(working_directory,saving_directory))
 							best_ROC_AUC = ROC_AUC_SCORE_list[-1][1]
-							shutil.copy('%s%s/CORRELATIONS.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
+							if mode != "ROC_testing":
+								shutil.copy('%s%s/CORRELATIONS.png'%(working_directory,saving_directory), '%s%s/BEST_ROC_AUC_Correlations.png'%(working_directory,saving_directory))
+						if mode != "ROC_testing":
+							plt.figure(figsize=(8,4))
+							plt.title('ROC_AUC_SCORE_list best: %.4f at %d'%(best_ROC_AUC,ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0]))
+							plt.plot(ROC_AUC_SCORE_list[:,0],ROC_AUC_SCORE_list[:,1])
+							plt.axhline(y=best_ROC_AUC,c='k',linestyle='--')
+							plt.axvline(x=ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0],c='k',linestyle='--')
+							plt.savefig('%s%s/ROC_progress.png'%(working_directory,saving_directory),bbox_inches='tight')
+							plt.close('all')
 
-						plt.figure(figsize=(8,4))
-						plt.title('ROC_AUC_SCORE_list best: %.4f at %d'%(best_ROC_AUC,ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0]))
-						plt.plot(ROC_AUC_SCORE_list[:,0],ROC_AUC_SCORE_list[:,1])
-						plt.axhline(y=best_ROC_AUC,c='k',linestyle='--')
-						plt.axvline(x=ROC_AUC_SCORE_list[np.where(ROC_AUC_SCORE_list==best_ROC_AUC)[0][0]][0],c='k',linestyle='--')
-						plt.savefig('%s%s/ROC_progress.png'%(working_directory,saving_directory),bbox_inches='tight')
-						plt.close('all')
-
-						np.save('%s%s/FoM_ROC_AUC_SCORE_list'%(working_directory,saving_directory),ROC_AUC_SCORE_list)
+						np.save('%s%s/FoM_ROC_AUC_SCORE_list_%d'%(working_directory,saving_directory,FoM_ID),ROC_AUC_SCORE_list)
 					except:
 						print('Roc failed')
 

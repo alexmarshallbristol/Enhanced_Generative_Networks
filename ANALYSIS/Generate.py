@@ -59,19 +59,6 @@ cmp_root = mpl.colors.ListedColormap(colours_raw_root)
 
 print(tf.__version__)
 
-def post_process(input_array):
-	output_array = np.empty(np.shape(input_array))
-	output_array[:,0] = np.squeeze(trans_1.inverse_transform(np.expand_dims(input_array[:,0],1)*7.))
-	output_array[:,1] = np.squeeze(trans_2.inverse_transform(np.expand_dims(input_array[:,1],1)*7.))
-	output_array[:,2] = np.squeeze(trans_3.inverse_transform(np.expand_dims(input_array[:,2],1)*7.))
-	output_array[:,3] = np.squeeze(trans_4.inverse_transform(np.expand_dims(input_array[:,3],1)*7.))
-	output_array[:,4] = np.squeeze(trans_5.inverse_transform(np.expand_dims(input_array[:,4],1)*7.))
-	output_array[:,5] = np.squeeze(trans_6.inverse_transform(np.expand_dims(input_array[:,5],1)*7.))
-	output_array = ((output_array - 0.1) * 2.4) - 1.
-	for i in range(0, 6): # Transformers do not work well with extreme values, not an issue once the network is trained a little, but want to get ROC values for young network
-		output_array[np.where(np.isnan(output_array[:,i])==True)] = np.sign(input_array[np.where(np.isnan(output_array[:,i])==True)])
-	return output_array
-
 def post_process_scaling(input_array, min_max):
 
 	# for i in [0,2,3,5]:
@@ -103,17 +90,18 @@ def ptparam_to_pxpy(input_array):
 
 
 # generator = load_model('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/BLUE_CRYSTAL_RESULTS/GAN_4D/Generator_best_ROC_AUC.h5')
-# generator = load_model('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/BLUE_CRYSTAL_RESULTS/GAN_4D/generator.h5')
+generator = load_model('/Users/am13743/Aux_GAN_thesis/THESIS_ITERATION/BLUE_CRYSTAL_RESULTS/GAN_1D/generator.h5')
 # generator = load_model('/Users/am13743/Generator_best_ROC_AUC.h5')
-generator = load_model('/Users/am13743/generator.h5')
+# generator = load_model('/Users/am13743/generator.h5')
 
 
 noise_size = 100000
 charge_gan = np.random.choice([-1,1],size=(noise_size,1,1),p=[1-0.5,0.5],replace=True)
-aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,4)))
+aux_gan = np.abs(np.random.normal(0,1,size=(noise_size,1)))
 gen_noise = np.random.normal(0, 1, (int(noise_size), 100))
-theta_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*0.97+0.015
-theta_pt_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*0.97+0.015
+theta_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*1.94-1.+0.03
+theta_pt_gan = np.random.uniform(low=0., high=1., size=(int(noise_size), 1, 1))*1.94-1.+0.03
+aux_gan = aux_gan*1.2
 images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan, theta_gan, theta_pt_gan])
 images = np.squeeze(images)
 images = images[:,1:]
@@ -126,20 +114,19 @@ for i in range(0, 6):
 		subplot += 1
 		plt.subplot(3,5,subplot)
 		# if subplot == 3: plt.title(iteration)
-		plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[0,1],[0,1]], norm=LogNorm(), cmap=cmp_root)
+		plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[-1,1],[-1,1]], norm=LogNorm(), cmap=cmp_root)
 		# plt.xlabel(axis_titles[i])
 		# plt.ylabel(axis_titles[j])
 plt.subplots_adjust(wspace=0.3, hspace=0.3)
 # plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
-plt.savefig('CORRELATIONS_raw.png',bbox_inches='tight')
+plt.savefig('CORRELATIONS_ptparam3.png',bbox_inches='tight')
 plt.close('all')
 
 
+images = (images+1.)/2.
+images = post_process_scaling(images,min_max_ptparam)
+images = ptparam_to_pxpy(images)
 
-aux_gan = aux_gan*1.1
-images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan, theta_gan, theta_pt_gan])
-images = np.squeeze(images)
-images = images[:,1:]
 
 plt.figure(figsize=(5*4, 3*4))
 subplot=0
@@ -148,33 +135,12 @@ for i in range(0, 6):
 		subplot += 1
 		plt.subplot(3,5,subplot)
 		# if subplot == 3: plt.title(iteration)
-		plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[0,1],[0,1]], norm=LogNorm(), cmap=cmp_root)
+		plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50, norm=LogNorm(), cmap=cmp_root)
 		# plt.xlabel(axis_titles[i])
 		# plt.ylabel(axis_titles[j])
 plt.subplots_adjust(wspace=0.3, hspace=0.3)
 # plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
-plt.savefig('CORRELATIONS_1_1.png',bbox_inches='tight')
-plt.close('all')
-
-
-aux_gan = aux_gan*1.12
-images = generator.predict([np.expand_dims(gen_noise,1), np.expand_dims(aux_gan,1), charge_gan, theta_gan, theta_pt_gan])
-images = np.squeeze(images)
-images = images[:,1:]
-
-plt.figure(figsize=(5*4, 3*4))
-subplot=0
-for i in range(0, 6):
-	for j in range(i+1, 6):
-		subplot += 1
-		plt.subplot(3,5,subplot)
-		# if subplot == 3: plt.title(iteration)
-		plt.hist2d(images[:noise_size,i], images[:noise_size,j], bins=50,range=[[0,1],[0,1]], norm=LogNorm(), cmap=cmp_root)
-		# plt.xlabel(axis_titles[i])
-		# plt.ylabel(axis_titles[j])
-plt.subplots_adjust(wspace=0.3, hspace=0.3)
-# plt.savefig('%s%s/CORRELATIONS/Correlations_%d.png'%(working_directory,saving_directory,iteration),bbox_inches='tight')
-plt.savefig('CORRELATIONS_1_2.png',bbox_inches='tight')
+plt.savefig('CORRELATIONS_xy3.png',bbox_inches='tight')
 plt.close('all')
 
 
